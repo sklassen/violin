@@ -5,7 +5,7 @@ use statrs::statistics::Distribution as StatrsDistribution;
 use statrs::distribution::{Normal, Continuous};
 use rand::distributions::Distribution;
 use rand::thread_rng;
-use rand_distr::{Normal as RandNormal, Uniform as RandUniform, Exp};
+use rand_distr::{Normal as RandNormal, Uniform as RandUniform, SkewNormal};
 
 
 #[derive(Serialize)]
@@ -78,65 +78,46 @@ pub fn calculate_violin_data(raw_data: Vec<f64>) -> Result<JsValue, JsValue> {
     Ok(serde_wasm_bindgen::to_value(&result).unwrap())
 }
 
-#[derive(Serialize)]
-pub struct TestData {
-    skewed_normal_1: Vec<f64>,
-    skewed_normal_2: Vec<f64>,
-    skewed_normal_3: Vec<f64>,
-    jump_diffusion_1: Vec<f64>,
-    jump_diffusion_2: Vec<f64>,
-    jump_diffusion_3: Vec<f64>,
+#[wasm_bindgen]
+pub fn generate_uniform_data(min: f64, max: f64, n_samples: usize) -> Vec<f64> {
+    let mut rng = thread_rng();
+    let dist = RandUniform::new(min, max);
+    (0..n_samples).map(|_| dist.sample(&mut rng)).collect()
 }
 
 #[wasm_bindgen]
-pub fn generate_test_data() -> Result<JsValue, JsValue> {
+pub fn generate_normal_data(mean: f64, std_dev: f64, n_samples: usize) -> Vec<f64> {
     let mut rng = thread_rng();
-    let n_samples = 300;
+    let dist = RandNormal::new(mean, std_dev).unwrap();
+    dist.sample_iter(&mut rng).take(n_samples).collect()
+}
 
-    // 1. Three random normal distributions with skew
-    let normal_pos_skew = RandNormal::new(2.0, 1.0).unwrap();
-    let exp_pos = Exp::new(1.0).unwrap();
-    let skewed_normal_1: Vec<f64> = (0..n_samples).map(|_| normal_pos_skew.sample(&mut rng) + exp_pos.sample(&mut rng)).collect();
+#[wasm_bindgen]
+pub fn generate_skewed_data(mean: f64, std_dev: f64, skew: f64, n_samples: usize) -> Vec<f64> {
+    let mut rng = thread_rng();
+    let dist = SkewNormal::new(mean, std_dev, skew).unwrap();
+    dist.sample_iter(&mut rng).take(n_samples).collect()
+}
 
-    let normal_neg_skew = RandNormal::new(-2.0, 1.0).unwrap();
-    let exp_neg = Exp::new(1.0).unwrap();
-    let skewed_normal_2: Vec<f64> = (0..n_samples).map(|_| normal_neg_skew.sample(&mut rng) - exp_neg.sample(&mut rng)).collect();
+#[wasm_bindgen]
+pub fn generate_bimodal_data(
+    mean1: f64, std_dev1: f64,
+    mean2: f64, std_dev2: f64,
+    weight: f64, // Weight for the first distribution
+    n_samples: usize
+) -> Vec<f64> {
+    let mut rng = thread_rng();
+    let dist1 = RandNormal::new(mean1, std_dev1).unwrap();
+    let dist2 = RandNormal::new(mean2, std_dev2).unwrap();
+    let uniform = RandUniform::new(0.0, 1.0);
 
-    let skewed_normal_3 = RandNormal::new(0.0, 1.5).unwrap().sample_iter(&mut rng).take(n_samples).collect();
-
-    // 2. Three dual normal distributions (bimodal)
-    let normal1a = RandNormal::new(-3.0, 1.0).unwrap();
-    let normal1b = RandNormal::new(3.0, 1.0).unwrap();
-    let uniform1 = RandUniform::new(0.0, 1.0);
-    let jump_diffusion_1 = (0..n_samples).map(|_| {
-        if uniform1.sample(&mut rng) < 0.5 { normal1a.sample(&mut rng) } else { normal1b.sample(&mut rng) }
-    }).collect();
-
-    let normal2a = RandNormal::new(-4.0, 0.8).unwrap();
-    let normal2b = RandNormal::new(1.0, 1.5).unwrap();
-    let uniform2 = RandUniform::new(0.0, 1.0);
-    let jump_diffusion_2 = (0..n_samples).map(|_| {
-        if uniform2.sample(&mut rng) < 0.7 { normal2a.sample(&mut rng) } else { normal2b.sample(&mut rng) }
-    }).collect();
-
-    let normal3a = RandNormal::new(0.0, 0.5).unwrap();
-    let normal3b = RandNormal::new(0.0, 3.5).unwrap();
-    let uniform3 = RandUniform::new(0.0, 1.0);
-     let jump_diffusion_3 = (0..n_samples).map(|_| {
-        if uniform3.sample(&mut rng) < 0.2 { normal3a.sample(&mut rng) } else { normal3b.sample(&mut rng) }
-    }).collect();
-
-
-    let test_data = TestData {
-        skewed_normal_1,
-        skewed_normal_2,
-        skewed_normal_3,
-        jump_diffusion_1,
-        jump_diffusion_2,
-        jump_diffusion_3,
-    };
-
-    Ok(serde_wasm_bindgen::to_value(&test_data).unwrap())
+    (0..n_samples).map(|_| {
+        if uniform.sample(&mut rng) < weight {
+            dist1.sample(&mut rng)
+        } else {
+            dist2.sample(&mut rng)
+        }
+    }).collect()
 }
 
 #[cfg(test)]
@@ -152,8 +133,26 @@ mod tests {
     }
 
     #[wasm_bindgen_test]
-    fn test_generate_test_data() {
-        let result = generate_test_data();
-        assert!(result.is_ok());
+    fn test_generate_uniform_data() {
+        let result = generate_uniform_data(0.0, 1.0, 100);
+        assert_eq!(result.len(), 100);
+    }
+
+    #[wasm_bindgen_test]
+    fn test_generate_normal_data() {
+        let result = generate_normal_data(0.0, 1.0, 100);
+        assert_eq!(result.len(), 100);
+    }
+
+    #[wasm_bindgen_test]
+    fn test_generate_skewed_data() {
+        let result = generate_skewed_data(0.0, 1.0, 5.0, 100);
+        assert_eq!(result.len(), 100);
+    }
+
+    #[wasm_bindgen_test]
+    fn test_generate_bimodal_data() {
+        let result = generate_bimodal_data(0.0, 1.0, 5.0, 1.0, 0.5, 100);
+        assert_eq!(result.len(), 100);
     }
 }

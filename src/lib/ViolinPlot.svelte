@@ -9,9 +9,8 @@
 
     let container;
 
-    onMount(() => {
-        if (!data) return;
-
+    // Reactive statement: This will re-run whenever 'data' or 'container' changes.
+    $: if (container && data) {
         const margin = { top: 30, right: 30, bottom: 30, left: 40 };
         const innerWidth = width - margin.left - margin.right;
         const innerHeight = height - margin.top - margin.bottom;
@@ -75,6 +74,7 @@
 
         // Median line
         svg.append("line")
+            .attr("class", "median-line")
             .attr("x1", center - boxWidth / 2)
             .attr("x2", center + boxWidth / 2)
             .attr("y1", y(data.median))
@@ -89,7 +89,7 @@
             .attr("text-anchor", "middle")
             .style("font-size", "16px")
             .text(title);
-    });
+    }
 </script>
 
 <div bind:this={container}></div>
