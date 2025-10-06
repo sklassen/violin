@@ -19,6 +19,7 @@ pub struct ViolinData {
     iqr: f64,
     upper_whisker: f64,
     lower_whisker: f64,
+    cumulative_sum: Vec<(usize, f64)>,
 }
 
 #[wasm_bindgen]
@@ -27,7 +28,7 @@ pub fn calculate_violin_data(raw_data: Vec<f64>) -> Result<JsValue, JsValue> {
         return Err(JsValue::from_str("Input data must have at least 4 elements."));
     }
 
-    let mut data = Data::new(raw_data);
+    let mut data = Data::new(raw_data.clone());
     let q1 = data.quantile(0.25);
     let median = data.quantile(0.5);
     let q3 = data.quantile(0.75);
@@ -63,6 +64,14 @@ pub fn calculate_violin_data(raw_data: Vec<f64>) -> Result<JsValue, JsValue> {
         kde_points.push((x, density));
     }
 
+    // Cumulative Sum Calculation
+    let mut cumulative_sum = Vec::with_capacity(raw_data.len());
+    let mut current_sum = 0.0;
+    for (i, &val) in raw_data.iter().enumerate() {
+        current_sum += val;
+        cumulative_sum.push((i, current_sum));
+    }
+
     let result = ViolinData {
         kde_points,
         q1,
@@ -73,6 +82,7 @@ pub fn calculate_violin_data(raw_data: Vec<f64>) -> Result<JsValue, JsValue> {
         iqr,
         upper_whisker,
         lower_whisker,
+        cumulative_sum,
     };
 
     Ok(serde_wasm_bindgen::to_value(&result).unwrap())

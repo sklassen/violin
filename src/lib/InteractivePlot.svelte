@@ -1,6 +1,7 @@
 <script>
 	import { onMount } from 'svelte';
 	import ViolinPlot from '$lib/ViolinPlot.svelte';
+	import TimeSeriesPlot from '$lib/TimeSeriesPlot.svelte';
 	import {
 		calculate_violin_data,
 		generate_uniform_data,
@@ -162,6 +163,9 @@
 
     {#if plotData}
         <ViolinPlot data={plotData} title={title} width={320} height={350} />
+        {#if plotData.cumulative_sum}
+            <TimeSeriesPlot data={plotData.cumulative_sum} />
+        {/if}
     {:else}
         <p>Generating plot...</p>
     {/if}
