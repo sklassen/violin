@@ -1,7 +1,6 @@
 <script>
-	import { onMount } from 'svelte';
+	import { onMount, createEventDispatcher } from 'svelte';
 	import ViolinPlot from '$lib/ViolinPlot.svelte';
-	import TimeSeriesPlot from '$lib/TimeSeriesPlot.svelte';
 	import {
 		calculate_violin_data,
 		generate_uniform_data,
@@ -12,6 +11,8 @@
 
 	export let type;
 	export let initialParams;
+
+	const dispatch = createEventDispatcher();
 
 	let params = { ...initialParams };
 	let plotData = null;
@@ -39,10 +40,12 @@
 
             if (rawData && rawData.length > 0) {
 			    plotData = calculate_violin_data(rawData);
+				dispatch('update', { type: type, data: plotData });
             }
 		} catch (e) {
 			console.error(`Error generating data for ${type}:`, e);
             plotData = null;
+			dispatch('update', { type: type, data: null });
 		}
 	}
 
@@ -163,9 +166,6 @@
 
     {#if plotData}
         <ViolinPlot data={plotData} title={title} width={320} height={350} />
-        {#if plotData.cumulative_sum}
-            <TimeSeriesPlot data={plotData.cumulative_sum} />
-        {/if}
     {:else}
         <p>Generating plot...</p>
     {/if}
