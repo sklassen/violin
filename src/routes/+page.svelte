@@ -1,6 +1,7 @@
 <script>
 	import { onMount } from 'svelte';
 	import init, { calculate_violin_data, generate_test_data } from '$lib/vio-pkg/vio.js';
+	import ViolinPlot from '$lib/ViolinPlot.svelte';
 
 	/** @type {Object.<string, any>} */
 	let results = {};
@@ -41,6 +42,15 @@
 	});
 </script>
 
+<style>
+	.plot-container {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 20px;
+		justify-content: center;
+	}
+</style>
+
 <h1>Svelte + Rust (WASM) Violin Plot Demo</h1>
 
 {#if error}
@@ -48,7 +58,13 @@
 {:else if !initialized}
 	<p>Initializing WASM module...</p>
 {:else}
-	<p>WASM module loaded and calculations complete. See console for details.</p>
-	<h2>Calculation Results:</h2>
-	<pre>{JSON.stringify(results, null, 2)}</pre>
+	<p>WASM module loaded and calculations complete.</p>
+	<h2>Violin Plot Results:</h2>
+	<div class="plot-container">
+		{#each Object.entries(results) as [key, plotData]}
+			{#if plotData && !plotData.error}
+				<ViolinPlot data={plotData} title={key} />
+			{/if}
+		{/each}
+	</div>
 {/if}
