@@ -1,28 +1,30 @@
 <script>
 	import { onMount } from 'svelte';
-	
-	let lib = false;
+	import init, { calculate_violin_data, generate_test_data } from '$lib/vio-pkg/vio.js';
 
+	/** @type {Object.<string, any>} */
 	let results = {};
+	/** @type {Error | null} */
 	let error = null;
 	let initialized = false;
 
 	onMount(async () => {
 		try {
+			console.log('WASM module initializing...');
+			await init();
 			console.log('WASM module initialized.');
-			lib = await import("vio");
-			await lib.default();
 
-			const testData = lib.generate_test_data();
+			const testData = generate_test_data();
 			console.log('Generated Test Data:', testData);
 
+			/** @type {Object.<string, any>} */
 			const calculatedResults = {};
 			for (const key in testData) {
 				if (Object.prototype.hasOwnProperty.call(testData, key)) {
 					const data = testData[key];
 					if (data && data.length > 0) {
 						console.log(`Calculating violin data for ${key}...`);
-						calculatedResults[key] = lib.calculate_violin_data(data);
+						calculatedResults[key] = calculate_violin_data(data);
 					} else {
 						console.log(`Skipping ${key} as it has no data.`);
 						calculatedResults[key] = { error: 'No data provided' };
@@ -32,7 +34,7 @@
 			results = calculatedResults;
 			initialized = true;
 			console.log('Violin Plot Calculation Results:', results);
-		} catch (e) {
+		} catch (/** @type {any} */ e) {
 			console.error('Error during WASM execution:', e);
 			error = e;
 		}
