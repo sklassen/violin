@@ -1,6 +1,7 @@
-<script lang="ts">
+<script>
 	import { onMount } from 'svelte';
-	import init, { generate_test_data, calculate_violin_data } from 'wasm-lib';
+	
+	let lib = false;
 
 	let results = {};
 	let error = null;
@@ -8,11 +9,11 @@
 
 	onMount(async () => {
 		try {
-			await init();
-			initialized = true;
 			console.log('WASM module initialized.');
+			lib = await import("vio");
+			await lib.default();
 
-			const testData = generate_test_data();
+			const testData = lib.generate_test_data();
 			console.log('Generated Test Data:', testData);
 
 			const calculatedResults = {};
@@ -21,7 +22,7 @@
 					const data = testData[key];
 					if (data && data.length > 0) {
 						console.log(`Calculating violin data for ${key}...`);
-						calculatedResults[key] = calculate_violin_data(data);
+						calculatedResults[key] = lib.calculate_violin_data(data);
 					} else {
 						console.log(`Skipping ${key} as it has no data.`);
 						calculatedResults[key] = { error: 'No data provided' };

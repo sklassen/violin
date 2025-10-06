@@ -384,6 +384,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f63a545481291138910575129486daeaf8ac54aee4387fe7906919f7830c7d9d"
 
 [[package]]
+name = "vio"
+version = "0.1.0"
+dependencies = [
+ "getrandom",
+ "rand",
+ "rand_distr",
+ "serde",
+ "serde-wasm-bindgen",
+ "statrs",
+ "wasm-bindgen",
+ "wasm-bindgen-test",
+]
+
+[[package]]
 name = "walkdir"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -493,20 +507,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "wasm-lib"
-version = "0.1.0"
-dependencies = [
- "getrandom",
- "rand",
- "rand_distr",
- "serde",
- "serde-wasm-bindgen",
- "statrs",
- "wasm-bindgen",
- "wasm-bindgen-test",
 ]
 
 [[package]]
