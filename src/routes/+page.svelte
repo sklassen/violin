@@ -30,6 +30,7 @@
 				}
 			}
 			results = calculatedResults;
+			initialized = true;
 			console.log('Violin Plot Calculation Results:', results);
 		} catch (e) {
 			console.error('Error during WASM execution:', e);
