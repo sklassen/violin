@@ -106,82 +106,68 @@
         {#if type === 'uniform'}
             <div class="control-row">
                 <label for="min">Min</label>
-                <input type="range" id="min" min="-10" max="10" step="0.1" bind:value={params.min}>
-                <input type="number" bind:value={params.min}>
+                <input type="number" id="min" min="-10" max="10" step="0.1" bind:value={params.min}>
             </div>
             <div class="control-row">
                 <label for="max">Max</label>
-                <input type="range" id="max" min="-10" max="10" step="0.1" bind:value={params.max}>
-                <input type="number" bind:value={params.max}>
+                <input type="number" id="max" min="-10" max="10" step="0.1" bind:value={params.max}>
             </div>
         {:else if type === 'normal'}
             <div class="control-row">
                 <label for="mean">Mean</label>
-                <input type="range" id="mean" min="-5" max="5" step="0.1" bind:value={params.mean}>
-                <input type="number" bind:value={params.mean}>
+                <input type="number" id="mean" min="-5" max="5" step="0.1" bind:value={params.mean}>
             </div>
             <div class="control-row">
                 <label for="std_dev">Std Dev</label>
-                <input type="range" id="std_dev" min="0.1" max="5" step="0.1" bind:value={params.std_dev}>
-                <input type="number" bind:value={params.std_dev}>
+                <input type="number" id="std_dev" min="0.1" max="5" step="0.1" bind:value={params.std_dev}>
             </div>
         {:else if type === 'skewed'}
              <div class="control-row">
                 <label for="mean">Mean</label>
-                <input type="range" id="mean" min="-5" max="5" step="0.1" bind:value={params.mean}>
-                <input type="number" bind:value={params.mean}>
+                <input type="number" id="mean" min="-5" max="5" step="0.1" bind:value={params.mean}>
             </div>
             <div class="control-row">
                 <label for="std_dev">Std Dev</label>
-                <input type="range" id="std_dev" min="0.1" max="5" step="0.1" bind:value={params.std_dev}>
-                <input type="number" bind:value={params.std_dev}>
+                <input type="number" id="std_dev" min="0.1" max="5" step="0.1" bind:value={params.std_dev}>
             </div>
             <div class="control-row">
                 <label for="skew">Skew</label>
-                <input type="range" id="skew" min="-10" max="10" step="0.1" bind:value={params.skew}>
-                <input type="number" bind:value={params.skew}>
+                <input type="number" id="skew" min="-10" max="10" step="0.1" bind:value={params.skew}>
             </div>
         {:else if type === 'bimodal'}
             <p>Distribution 1</p>
             <div class="control-row">
                 <label for="mean1">Mean 1</label>
-                <input type="range" id="mean1" min="-10" max="10" step="0.1" bind:value={params.mean1}>
-                <input type="number" bind:value={params.mean1}>
+                <input type="number" id="mean1" min="-10" max="10" step="0.1" bind:value={params.mean1}>
             </div>
             <div class="control-row">
                 <label for="std_dev1">Std Dev 1</label>
-                <input type="range" id="std_dev1" min="0.1" max="5" step="0.1" bind:value={params.std_dev1}>
-                <input type="number" bind:value={params.std_dev1}>
+                <input type="number" id="std_dev1" min="0.1" max="5" step="0.1" bind:value={params.std_dev1}>
             </div>
             <hr>
             <p>Distribution 2</p>
             <div class="control-row">
                 <label for="mean2">Mean 2</label>
-                <input type="range" id="mean2" min="-10" max="10" step="0.1" bind:value={params.mean2}>
-                <input type="number" bind:value={params.mean2}>
+                <input type="number" id="mean2" min="-10" max="10" step="0.1" bind:value={params.mean2}>
             </div>
             <div class="control-row">
                 <label for="std_dev2">Std Dev 2</label>
-                <input type="range" id="std_dev2" min="0.1" max="5" step="0.1" bind:value={params.std_dev2}>
-                <input type="number" bind:value={params.std_dev2}>
+                <input type="number" id="std_dev2" min="0.1" max="5" step="0.1" bind:value={params.std_dev2}>
             </div>
              <hr>
             <div class="control-row">
                 <label for="weight">Weight (Dist 1)</label>
-                <input type="range" id="weight" min="0" max="1" step="0.01" bind:value={params.weight}>
-                <input type="number" bind:value={params.weight}>
+                <input type="number" id="weight" min="0" max="1" step="0.01" bind:value={params.weight}>
             </div>
         {/if}
         <hr>
         <div class="control-row">
             <label for="ar_coeff">Autoregression</label>
-            <input type="range" id="ar_coeff" min="0" max="0.99" step="0.01" bind:value={params.ar_coeff}>
-            <input type="number" bind:value={params.ar_coeff}>
+            <input type="number" id="ar_coeff" min="0" max="0.99" step="0.01" bind:value={params.ar_coeff}>
         </div>
         <div class="control-row">
             <label for="boxSize">P&F Box Size</label>
-            <input type="range" id="boxSize" min="0.1" max="10" step="0.1" bind:value={params.boxSize}>
-            <input type="number" bind:value={params.boxSize}>
+            <input type="number" id="boxSize" min="0.1" max="10" step="0.1" bind:value={params.boxSize}>
         </div>
     </div>
 

@@ -57,7 +57,7 @@
                        .attr("y", y(yLevel))
                        .attr("text-anchor", "middle")
                        .attr("dominant-baseline", "middle")
-                       .style("font-size", `${Math.min(columnWidth, boxSize * 2)}px`)
+                       .style("font-size", `${Math.min(columnWidth, boxSize * 4)}px`)
                        .style("fill", col.direction === 'Up' ? 'green' : 'red')
                        .text(symbol);
                 }
