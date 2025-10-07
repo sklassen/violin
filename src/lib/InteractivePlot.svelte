@@ -28,16 +28,16 @@
 		try {
 			switch (type) {
 				case 'uniform':
-					rawData = generate_uniform_data(params.min, params.max, n_samples);
+					rawData = generate_uniform_data(params.min, params.max, params.ar_coeff, n_samples);
 					break;
 				case 'normal':
-					rawData = generate_normal_data(params.mean, params.std_dev, n_samples);
+					rawData = generate_normal_data(params.mean, params.std_dev, params.ar_coeff, n_samples);
 					break;
 				case 'skewed':
-					rawData = generate_skewed_data(params.mean, params.std_dev, params.skew, n_samples);
+					rawData = generate_skewed_data(params.mean, params.std_dev, params.skew, params.ar_coeff, n_samples);
 					break;
 				case 'bimodal':
-					rawData = generate_bimodal_data(params.mean1, params.std_dev1, params.mean2, params.std_dev2, params.weight, n_samples);
+					rawData = generate_bimodal_data(params.mean1, params.std_dev1, params.mean2, params.std_dev2, params.weight, params.ar_coeff, n_samples);
 					break;
 			}
 		} catch (e) {
@@ -173,6 +173,11 @@
             </div>
         {/if}
         <hr>
+        <div class="control-row">
+            <label for="ar_coeff">Autoregression</label>
+            <input type="range" id="ar_coeff" min="0" max="0.99" step="0.01" bind:value={params.ar_coeff}>
+            <input type="number" bind:value={params.ar_coeff}>
+        </div>
         <div class="control-row">
             <label for="boxSize">P&F Box Size</label>
             <input type="range" id="boxSize" min="0.1" max="10" step="0.1" bind:value={params.boxSize}>
