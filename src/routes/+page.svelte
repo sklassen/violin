@@ -3,9 +3,8 @@
 	import init from '$lib/vio-pkg/vio.js';
 	import InteractivePlot from '$lib/InteractivePlot.svelte';
 
-	/** @type {Error | null} */
-	let error = null;
-	let initialized = false;
+	let error = $state(null);
+	let initialized = $state(false);
 
 	// Initial parameters for each plot type
 	const uniformParams = { min: -2, max: 2 };
@@ -38,11 +37,6 @@
 		width: 100%;
 		text-align: center;
 	}
-	.plot-group {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-    }
 </style>
 
 <h1>Interactive Svelte + Rust (WASM) Violin Plot Demo</h1>
@@ -53,17 +47,9 @@
 	<p>Initializing WASM module...</p>
 {:else}
 	<main>
-		<div class="plot-group">
-			<InteractivePlot type="uniform" initialParams={uniformParams} />
-		</div>
-		<div class="plot-group">
-			<InteractivePlot type="normal" initialParams={normalParams} />
-		</div>
-		<div class="plot-group">
-			<InteractivePlot type="skewed" initialParams={skewedParams}  />
-		</div>
-		<div class="plot-group">
-			<InteractivePlot type="bimodal" initialParams={bimodalParams} />
-		</div>
+		<InteractivePlot type="uniform" initialParams={uniformParams} />
+		<InteractivePlot type="normal" initialParams={normalParams} />
+		<InteractivePlot type="skewed" initialParams={skewedParams} />
+		<InteractivePlot type="bimodal" initialParams={bimodalParams} />
 	</main>
 {/if}

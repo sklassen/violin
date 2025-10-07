@@ -1,6 +1,5 @@
 <script>
-	import { onMount, createEventDispatcher } from 'svelte';
-  import * as d3 from 'd3';
+	import { onMount } from 'svelte';
 	import ViolinPlot from '$lib/ViolinPlot.svelte';
 	import TimeSeriesPlot from '$lib/TimeSeriesPlot.svelte';
 	import {
@@ -11,13 +10,10 @@
 		generate_bimodal_data
 	} from '$lib/vio-pkg/vio.js';
 
-	export let type;
-	export let initialParams;
+	let { type, initialParams } = $props();
 
-	const dispatch = createEventDispatcher();
-
-	let params = { ...initialParams };
-	let plotData = null;
+	let params = $state({ ...initialParams });
+	let plotData = $state(null);
     let title = type.charAt(0).toUpperCase() + type.slice(1) + " Distribution";
 
 	const n_samples = 300;
@@ -42,26 +38,22 @@
 
             if (rawData && rawData.length > 0) {
 			    plotData = calculate_violin_data(rawData);
-				dispatch('update', { type: type, data: plotData });
             }
 		} catch (e) {
 			console.error(`Error generating data for ${type}:`, e);
             plotData = null;
-			dispatch('update', { type: type, data: null });
 		}
 	}
-
-    function handleParamChange(paramName, value) {
-        params[paramName] = value;
-        params = params; // This reassignment is key to triggering reactivity
-    }
 
 	onMount(() => {
 		updatePlot();
 	});
 
     // Reactive statement to update plot when params change
-    $: params, updatePlot();
+    $effect(() => {
+        // This effect will re-run whenever params change
+        updatePlot();
+    });
 
 </script>
 
@@ -98,77 +90,79 @@
         {#if type === 'uniform'}
             <div class="control-row">
                 <label for="min">Min</label>
-                <input type="range" id="min" min="-10" max="10" step="0.1" value={params.min} on:input={(e) => handleParamChange('min', e.currentTarget.valueAsNumber)}>
-                <input type="number" value={params.min} on:input={(e) => handleParamChange('min', e.currentTarget.valueAsNumber)}>
+                <input type="range" id="min" min="-10" max="10" step="0.1" bind:value={params.min}>
+                <input type="number" bind:value={params.min}>
             </div>
             <div class="control-row">
                 <label for="max">Max</label>
-                <input type="range" id="max" min="-10" max="10" step="0.1" value={params.max} on:input={(e) => handleParamChange('max', e.currentTarget.valueAsNumber)}>
-                <input type="number" value={params.max} on:input={(e) => handleParamChange('max', e.currentTarget.valueAsNumber)}>
+                <input type="range" id="max" min="-10" max="10" step="0.1" bind:value={params.max}>
+                <input type="number" bind:value={params.max}>
             </div>
         {:else if type === 'normal'}
             <div class="control-row">
                 <label for="mean">Mean</label>
-                <input type="range" id="mean" min="-5" max="5" step="0.1" value={params.mean} on:input={(e) => handleParamChange('mean', e.currentTarget.valueAsNumber)}>
-                <input type="number" value={params.mean} on:input={(e) => handleParamChange('mean', e.currentTarget.valueAsNumber)}>
+                <input type="range" id="mean" min="-5" max="5" step="0.1" bind:value={params.mean}>
+                <input type="number" bind:value={params.mean}>
             </div>
             <div class="control-row">
                 <label for="std_dev">Std Dev</label>
-                <input type="range" id="std_dev" min="0.1" max="5" step="0.1" value={params.std_dev} on:input={(e) => handleParamChange('std_dev', e.currentTarget.valueAsNumber)}>
-                <input type="number" value={params.std_dev} on:input={(e) => handleParamChange('std_dev', e.currentTarget.valueAsNumber)}>
+                <input type="range" id="std_dev" min="0.1" max="5" step="0.1" bind:value={params.std_dev}>
+                <input type="number" bind:value={params.std_dev}>
             </div>
         {:else if type === 'skewed'}
              <div class="control-row">
                 <label for="mean">Mean</label>
-                <input type="range" id="mean" min="-5" max="5" step="0.1" value={params.mean} on:input={(e) => handleParamChange('mean', e.currentTarget.valueAsNumber)}>
-                <input type="number" value={params.mean} on:input={(e) => handleParamChange('mean', e.currentTarget.valueAsNumber)}>
+                <input type="range" id="mean" min="-5" max="5" step="0.1" bind:value={params.mean}>
+                <input type="number" bind:value={params.mean}>
             </div>
             <div class="control-row">
                 <label for="std_dev">Std Dev</label>
-                <input type="range" id="std_dev" min="0.1" max="5" step="0.1" value={params.std_dev} on:input={(e) => handleParamChange('std_dev', e.currentTarget.valueAsNumber)}>
-                <input type="number" value={params.std_dev} on:input={(e) => handleParamChange('std_dev', e.currentTarget.valueAsNumber)}>
+                <input type="range" id="std_dev" min="0.1" max="5" step="0.1" bind:value={params.std_dev}>
+                <input type="number" bind:value={params.std_dev}>
             </div>
             <div class="control-row">
                 <label for="skew">Skew</label>
-                <input type="range" id="skew" min="-10" max="10" step="0.1" value={params.skew} on:input={(e) => handleParamChange('skew', e.currentTarget.valueAsNumber)}>
-                <input type="number" value={params.skew} on:input={(e) => handleParamChange('skew', e.currentTarget.valueAsNumber)}>
+                <input type="range" id="skew" min="-10" max="10" step="0.1" bind:value={params.skew}>
+                <input type="number" bind:value={params.skew}>
             </div>
         {:else if type === 'bimodal'}
             <p>Distribution 1</p>
             <div class="control-row">
                 <label for="mean1">Mean 1</label>
-                <input type="range" id="mean1" min="-10" max="10" step="0.1" value={params.mean1} on:input={(e) => handleParamChange('mean1', e.currentTarget.valueAsNumber)}>
-                <input type="number" value={params.mean1} on:input={(e) => handleParamChange('mean1', e.currentTarget.valueAsNumber)}>
+                <input type="range" id="mean1" min="-10" max="10" step="0.1" bind:value={params.mean1}>
+                <input type="number" bind:value={params.mean1}>
             </div>
             <div class="control-row">
                 <label for="std_dev1">Std Dev 1</label>
-                <input type="range" id="std_dev1" min="0.1" max="5" step="0.1" value={params.std_dev1} on:input={(e) => handleParamChange('std_dev1', e.currentTarget.valueAsNumber)}>
-                <input type="number" value={params.std_dev1} on:input={(e) => handleParamChange('std_dev1', e.currentTarget.valueAsNumber)}>
+                <input type="range" id="std_dev1" min="0.1" max="5" step="0.1" bind:value={params.std_dev1}>
+                <input type="number" bind:value={params.std_dev1}>
             </div>
             <hr>
             <p>Distribution 2</p>
             <div class="control-row">
                 <label for="mean2">Mean 2</label>
-                <input type="range" id="mean2" min="-10" max="10" step="0.1" value={params.mean2} on:input={(e) => handleParamChange('mean2', e.currentTarget.valueAsNumber)}>
-                <input type="number" value={params.mean2} on:input={(e) => handleParamChange('mean2', e.currentTarget.valueAsNumber)}>
+                <input type="range" id="mean2" min="-10" max="10" step="0.1" bind:value={params.mean2}>
+                <input type="number" bind:value={params.mean2}>
             </div>
             <div class="control-row">
                 <label for="std_dev2">Std Dev 2</label>
-                <input type="range" id="std_dev2" min="0.1" max="5" step="0.1" value={params.std_dev2} on:input={(e) => handleParamChange('std_dev2', e.currentTarget.valueAsNumber)}>
-                <input type="number" value={params.std_dev2} on:input={(e) => handleParamChange('std_dev2', e.currentTarget.valueAsNumber)}>
+                <input type="range" id="std_dev2" min="0.1" max="5" step="0.1" bind:value={params.std_dev2}>
+                <input type="number" bind:value={params.std_dev2}>
             </div>
              <hr>
             <div class="control-row">
                 <label for="weight">Weight (Dist 1)</label>
-                <input type="range" id="weight" min="0" max="1" step="0.01" value={params.weight} on:input={(e) => handleParamChange('weight', e.currentTarget.valueAsNumber)}>
-                <input type="number" value={params.weight} on:input={(e) => handleParamChange('weight', e.currentTarget.valueAsNumber)}>
+                <input type="range" id="weight" min="0" max="1" step="0.01" bind:value={params.weight}>
+                <input type="number" bind:value={params.weight}>
             </div>
         {/if}
     </div>
 
     {#if plotData}
         <ViolinPlot data={plotData} title={title} width={320} height={350} />
-				<TimeSeriesPlot data={d3.cumsum(plotData)} />
+        {#if plotData.cumulative_sum}
+            <TimeSeriesPlot data={plotData.cumulative_sum} />
+        {/if}
     {:else}
         <p>Generating plot...</p>
     {/if}
