@@ -2,8 +2,10 @@
 	import { onMount } from 'svelte';
 	import ViolinPlot from '$lib/ViolinPlot.svelte';
 	import TimeSeriesPlot from '$lib/TimeSeriesPlot.svelte';
+	import PointAndFigureChart from '$lib/PointAndFigureChart.svelte';
 	import {
 		calculate_violin_data,
+		calculate_pnf_data,
 		generate_uniform_data,
 		generate_normal_data,
 		generate_skewed_data,
@@ -12,10 +14,11 @@
 
 	let { type, initialParams } = $props();
 
-	let params = $state({ ...initialParams });
+	let params = $state({ ...initialParams, boxSize: 1.0 });
 	let rawData = $state([]);
 	let plotData = $state(null);
 	let plotTSData = $state([]);
+	let pnfData = $state([]);
     let title = type.charAt(0).toUpperCase() + type.slice(1) + " Distribution";
 
 	const n_samples = 300;
@@ -43,21 +46,28 @@
 		}
 	});
 
-	// This effect calculates plot data whenever rawData changes
+	// This effect calculates plot data whenever rawData or boxSize changes
 	$effect(() => {
 		if (rawData && rawData.length > 0) {
 			plotData = calculate_violin_data(rawData);
 
-			const cumulative_sum = [];
+			const cumulative_sum_values = [];
+			const cumulative_sum_pairs = [];
 			let current_sum = 0.0;
 			for (let i = 0; i < rawData.length; i++) {
 				current_sum += rawData[i];
-				cumulative_sum.push([i, current_sum]);
+				cumulative_sum_pairs.push([i, current_sum]);
+				cumulative_sum_values.push(current_sum);
 			}
-			plotTSData = cumulative_sum;
+			plotTSData = cumulative_sum_pairs;
+
+			// Calculate P&F data
+			pnfData = calculate_pnf_data(cumulative_sum_values, params.boxSize, 3);
+
 		} else {
 			plotData = null;
 			plotTSData = [];
+			pnfData = [];
 		}
 	});
 
@@ -162,12 +172,21 @@
                 <input type="number" bind:value={params.weight}>
             </div>
         {/if}
+        <hr>
+        <div class="control-row">
+            <label for="boxSize">P&F Box Size</label>
+            <input type="range" id="boxSize" min="0.1" max="10" step="0.1" bind:value={params.boxSize}>
+            <input type="number" bind:value={params.boxSize}>
+        </div>
     </div>
 
     {#if plotData}
         <ViolinPlot data={plotData} title={title} width={320} height={350} />
         {#if plotTSData.length > 0}
             <TimeSeriesPlot data={plotTSData} />
+        {/if}
+        {#if pnfData.length > 0}
+            <PointAndFigureChart data={pnfData} boxSize={params.boxSize} />
         {/if}
     {:else}
         <p>Generating plot...</p>

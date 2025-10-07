@@ -7,7 +7,6 @@ use rand::distributions::Distribution;
 use rand::thread_rng;
 use rand_distr::{Normal as RandNormal, Uniform as RandUniform, SkewNormal};
 
-
 #[derive(Serialize)]
 pub struct ViolinData {
     kde_points: Vec<(f64, f64)>,
@@ -77,6 +76,85 @@ pub fn calculate_violin_data(raw_data: Vec<f64>) -> Result<JsValue, JsValue> {
 
     Ok(serde_wasm_bindgen::to_value(&result).unwrap())
 }
+
+#[derive(Serialize, Clone, Copy, PartialEq, Debug)]
+pub enum PnfDirection {
+    Up,
+    Down,
+}
+
+#[derive(Serialize, Debug)]
+pub struct PnfColumn {
+    pub direction: PnfDirection,
+    pub from: f64,
+    pub to: f64,
+}
+
+#[wasm_bindgen]
+pub fn calculate_pnf_data(
+    time_series: Vec<f64>,
+    box_size: f64,
+    reversal_amount: usize,
+) -> Result<JsValue, JsValue> {
+    if time_series.len() < 2 || box_size <= 0.0 {
+        return Ok(serde_wasm_bindgen::to_value(&Vec::<PnfColumn>::new()).unwrap());
+    }
+
+    let mut columns: Vec<PnfColumn> = Vec::new();
+    let reversal_distance = box_size * reversal_amount as f64;
+
+    let mut direction: Option<PnfDirection> = None;
+    let mut column_start_price = time_series[0];
+    let mut last_extreme = time_series[0]; // High for up-column, low for down-column
+
+    for &price in time_series.iter().skip(1) {
+        if let Some(dir) = direction {
+            match dir {
+                PnfDirection::Up => {
+                    if price > last_extreme {
+                        last_extreme = price;
+                    } else if price <= last_extreme - reversal_distance {
+                        columns.push(PnfColumn { direction: PnfDirection::Up, from: column_start_price, to: last_extreme });
+                        direction = Some(PnfDirection::Down);
+                        column_start_price = last_extreme;
+                        last_extreme = price;
+                    }
+                }
+                PnfDirection::Down => {
+                    if price < last_extreme {
+                        last_extreme = price;
+                    } else if price >= last_extreme + reversal_distance {
+                        columns.push(PnfColumn { direction: PnfDirection::Down, from: column_start_price, to: last_extreme });
+                        direction = Some(PnfDirection::Up);
+                        column_start_price = last_extreme;
+                        last_extreme = price;
+                    }
+                }
+            }
+        } else {
+            // Establish initial direction
+            if price >= column_start_price + box_size {
+                direction = Some(PnfDirection::Up);
+                last_extreme = price;
+            } else if price <= column_start_price - box_size {
+                direction = Some(PnfDirection::Down);
+                last_extreme = price;
+            }
+        }
+    }
+
+    // Add the last, uncommitted column
+    if let Some(dir) = direction {
+        columns.push(PnfColumn {
+            direction: dir,
+            from: column_start_price,
+            to: last_extreme,
+        });
+    }
+
+    Ok(serde_wasm_bindgen::to_value(&columns).unwrap())
+}
+
 
 #[wasm_bindgen]
 pub fn generate_uniform_data(min: f64, max: f64, n_samples: usize) -> Vec<f64> {
@@ -154,5 +232,12 @@ mod tests {
     fn test_generate_bimodal_data() {
         let result = generate_bimodal_data(0.0, 1.0, 5.0, 1.0, 0.5, 100);
         assert_eq!(result.len(), 100);
+    }
+
+    #[wasm_bindgen_test]
+    fn test_calculate_pnf_data() {
+        let data = vec![65.0, 66.0, 67.0, 66.0, 65.0, 64.0, 63.0, 62.0, 61.0, 62.0, 63.0, 64.0, 65.0, 66.0, 67.0];
+        let result = calculate_pnf_data(data, 1.0, 3);
+        assert!(result.is_ok());
     }
 }
