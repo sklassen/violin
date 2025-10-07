@@ -1,6 +1,8 @@
 <script>
 	import { onMount, createEventDispatcher } from 'svelte';
+  import * as d3 from 'd3';
 	import ViolinPlot from '$lib/ViolinPlot.svelte';
+	import TimeSeriesPlot from '$lib/TimeSeriesPlot.svelte';
 	import {
 		calculate_violin_data,
 		generate_uniform_data,
@@ -166,6 +168,7 @@
 
     {#if plotData}
         <ViolinPlot data={plotData} title={title} width={320} height={350} />
+				<TimeSeriesPlot data={d3.cumsum(plotData)} />
     {:else}
         <p>Generating plot...</p>
     {/if}
