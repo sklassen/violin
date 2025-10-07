@@ -13,13 +13,15 @@
 	let { type, initialParams } = $props();
 
 	let params = $state({ ...initialParams });
+	let rawData = $state([]);
 	let plotData = $state(null);
+	let plotTSData = $state([]);
     let title = type.charAt(0).toUpperCase() + type.slice(1) + " Distribution";
 
 	const n_samples = 300;
 
-	function updatePlot() {
-		let rawData;
+	// This effect will re-run whenever params change, generating new rawData
+	$effect(() => {
 		try {
 			switch (type) {
 				case 'uniform':
@@ -35,25 +37,29 @@
 					rawData = generate_bimodal_data(params.mean1, params.std_dev1, params.mean2, params.std_dev2, params.weight, n_samples);
 					break;
 			}
-
-            if (rawData && rawData.length > 0) {
-			    plotData = calculate_violin_data(rawData);
-            }
 		} catch (e) {
 			console.error(`Error generating data for ${type}:`, e);
-            plotData = null;
+            rawData = [];
 		}
-	}
-
-	onMount(() => {
-		updatePlot();
 	});
 
-    // Reactive statement to update plot when params change
-    $effect(() => {
-        // This effect will re-run whenever params change
-        updatePlot();
-    });
+	// This effect calculates plot data whenever rawData changes
+	$effect(() => {
+		if (rawData && rawData.length > 0) {
+			plotData = calculate_violin_data(rawData);
+
+			const cumulative_sum = [];
+			let current_sum = 0.0;
+			for (let i = 0; i < rawData.length; i++) {
+				current_sum += rawData[i];
+				cumulative_sum.push([i, current_sum]);
+			}
+			plotTSData = cumulative_sum;
+		} else {
+			plotData = null;
+			plotTSData = [];
+		}
+	});
 
 </script>
 
@@ -160,8 +166,8 @@
 
     {#if plotData}
         <ViolinPlot data={plotData} title={title} width={320} height={350} />
-        {#if plotData.cumulative_sum}
-            <TimeSeriesPlot data={plotData.cumulative_sum} />
+        {#if plotTSData.length > 0}
+            <TimeSeriesPlot data={plotTSData} />
         {/if}
     {:else}
         <p>Generating plot...</p>
