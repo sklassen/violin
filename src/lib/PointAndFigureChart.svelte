@@ -33,33 +33,65 @@
                 .range([0, innerWidth])
                 .padding(0.1);
 
-            svg.append("g").call(d3.axisLeft(y).ticks(5));
+            // Add Y-axis grid lines for better readability
+            svg.append("g")
+                .attr("class", "grid")
+                .call(d3.axisLeft(y)
+                    .ticks(10)
+                    .tickSize(-innerWidth)
+                    .tickFormat("")
+                )
+                .selectAll("line")
+                .attr("stroke-opacity", 0.1);
+
+            svg.append("g").call(d3.axisLeft(y).ticks(10));
             svg.append("g")
                .attr("transform", `translate(0, ${innerHeight})`)
                .call(d3.axisBottom(x).tickFormat(i => i + 1));
 
             const columnWidth = x.bandwidth();
+            const symbolSize = Math.min(columnWidth, Math.abs(y(yMax) - y(yMax + boxSize))) * 0.7;
+            const symbolRadius = symbolSize / 2;
 
             data.forEach((col, i) => {
                 const start = Math.min(col.from, col.to);
                 const end = Math.max(col.from, col.to);
-                const numBoxes = Math.floor((end - start) / boxSize);
+                const numBoxes = Math.floor(Math.abs(end - start) / boxSize);
 
                 for (let j = 0; j <= numBoxes; j++) {
                     const yLevel = col.direction === 'Up'
-                        ? Math.floor(col.from / boxSize) * boxSize + j * boxSize
-                        : Math.ceil(col.from / boxSize) * boxSize - j * boxSize;
+                        ? start + j * boxSize
+                        : end - j * boxSize;
 
-                    const symbol = col.direction === 'Up' ? 'X' : 'O';
+                    const cx = x(i) + columnWidth / 2;
+                    const cy = y(yLevel);
 
-                    svg.append("text")
-                       .attr("x", x(i) + columnWidth / 2)
-                       .attr("y", y(yLevel))
-                       .attr("text-anchor", "middle")
-                       .attr("dominant-baseline", "middle")
-                       .style("font-size", `${Math.min(columnWidth, boxSize * 4)}px`)
-                       .style("fill", col.direction === 'Up' ? 'green' : 'red')
-                       .text(symbol);
+                    if (col.direction === 'Up') {
+                        // Draw 'X' with two lines
+                        svg.append("line")
+                           .attr("x1", cx - symbolRadius)
+                           .attr("y1", cy - symbolRadius)
+                           .attr("x2", cx + symbolRadius)
+                           .attr("y2", cy + symbolRadius)
+                           .attr("stroke", "green")
+                           .attr("stroke-width", 1.5);
+                        svg.append("line")
+                           .attr("x1", cx - symbolRadius)
+                           .attr("y1", cy + symbolRadius)
+                           .attr("x2", cx + symbolRadius)
+                           .attr("y2", cy - symbolRadius)
+                           .attr("stroke", "green")
+                           .attr("stroke-width", 1.5);
+                    } else {
+                        // Draw 'O' with a circle
+                        svg.append("circle")
+                           .attr("cx", cx)
+                           .attr("cy", cy)
+                           .attr("r", symbolRadius)
+                           .attr("stroke", "red")
+                           .attr("stroke-width", 1.5)
+                           .attr("fill", "none");
+                    }
                 }
             });
 
