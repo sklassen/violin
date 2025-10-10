@@ -9,7 +9,8 @@
 		generate_uniform_data,
 		generate_normal_data,
 		generate_skewed_data,
-		generate_bimodal_data
+		generate_bimodal_data,
+		generate_fractal_data
 	} from '$lib/vio-pkg/vio.js';
 
 	let { type, initialParams } = $props();
@@ -39,6 +40,14 @@
 					break;
 				case 'bimodal':
 					rawData = generate_bimodal_data(params.mean1, params.std_dev1, params.mean2, params.std_dev2, params.weight, params.ar_coeff, n_samples);
+					break;
+				case 'fractal':
+					const fbmPath = generate_fractal_data(params.hurst, n_samples);
+					const increments = [];
+					for (let i = 0; i < fbmPath.length - 1; i++) {
+						increments.push(fbmPath[i + 1] - fbmPath[i]);
+					}
+					rawData = increments;
 					break;
 			}
 		} catch (e) {
@@ -187,13 +196,21 @@
                     <input type="range" id="weight" min="0" max="1" step="0.01" bind:value={params.weight}>
                     <input type="number" bind:value={params.weight}>
                 </div>
+			{:else if type === 'fractal'}
+				<div class="control-row">
+					<label for="hurst">Hurst</label>
+					<input type="range" id="hurst" min="0.01" max="0.99" step="0.01" bind:value={params.hurst}>
+					<input type="number" bind:value={params.hurst}>
+				</div>
             {/if}
             <hr>
-            <div class="control-row">
-                <label for="ar_coeff">Autoregression</label>
-                <input type="range" id="ar_coeff" min="0" max="0.99" step="0.01" bind:value={params.ar_coeff}>
-                <input type="number" bind:value={params.ar_coeff}>
-            </div>
+			{#if type !== 'fractal'}
+				<div class="control-row">
+					<label for="ar_coeff">Autoregression</label>
+					<input type="range" id="ar_coeff" min="0" max="0.99" step="0.01" bind:value={params.ar_coeff}>
+					<input type="number" bind:value={params.ar_coeff}>
+				</div>
+			{/if}
             <div class="control-row">
                 <label for="boxSize">P&F Box Size</label>
                 <input type="range" id="boxSize" min="0.1" max="10" step="0.1" bind:value={params.boxSize}>

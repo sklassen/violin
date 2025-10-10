@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Violin Plot Demo - User Guide</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+        }
+        h1, h2, h3 {
+            color: #333;
+        }
+        code {
+            background-color: #f4f4f4;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>User Guide: Interactive Violin Plot Demo</h1>
+
+    <h2>Introduction</h2>
+    <p>This application is designed to help you explore and understand different types of statistical distributions and time series data. By adjusting the parameters for each distribution, you can see how they affect the shape of the data and the resulting plots.</p>
+
+    <h2>The Plots</h2>
+    <p>For each distribution, there are three types of plots:</p>
+    <ul>
+        <li><strong>Violin Plot:</strong> This plot shows the distribution of the raw data points. The width of the violin represents the density of the data at that point. The box plot inside the violin shows the median, quartiles, and whiskers of the data.</li>
+        <li><strong>Time Series Plot:</strong> This plot shows the cumulative sum of the raw data points over time. This helps to visualize the "path" that the data takes.</li>
+        <li><strong>Point & Figure Chart:</strong> This is a type of financial chart that shows price movements without regard to time. It is used to identify trends and patterns in the cumulative sum data.</li>
+    </ul>
+
+    <h2>The Distributions</h2>
+    <p>The application allows you to explore five different types of distributions:</p>
+
+    <h3>Uniform Distribution</h3>
+    <p>This is a simple distribution where all values within a given range are equally likely to occur.</p>
+    <ul>
+        <li><strong>Min:</strong> The minimum value in the distribution.</li>
+        <li><strong>Max:</strong> The maximum value in the distribution.</li>
+    </ul>
+
+    <h3>Normal Distribution</h3>
+    <p>Also known as a "bell curve," this is a very common distribution where the data is centered around a mean value.</p>
+    <ul>
+        <li><strong>Mean:</strong> The average value of the distribution.</li>
+        <li><strong>Std Dev:</strong> The standard deviation, which controls the "spread" of the data.</li>
+    </ul>
+
+    <h3>Skewed Distribution</h3>
+    <p>This is a distribution where the data is not symmetrical. The "skew" parameter controls the direction and degree of the skew.</p>
+    <ul>
+        <li><strong>Mean:</strong> The average value of the distribution.</li>
+        <li><strong>Std Dev:</strong> The standard deviation of the distribution.</li>
+        <li><strong>Skew:</strong> A positive value will skew the data to the right, while a negative value will skew it to the left.</li>
+    </ul>
+
+    <h3>Bimodal Distribution</h3>
+    <p>This is a distribution with two "peaks" or modes. It is created by mixing two normal distributions together.</p>
+    <ul>
+        <li><strong>Mean 1 & Std Dev 1:</strong> The parameters for the first normal distribution.</li>
+        <li><strong>Mean 2 & Std Dev 2:</strong> The parameters for the second normal distribution.</li>
+        <li><strong>Weight (Dist 1):</strong> This controls the "mix" of the two distributions. A value of 1 will show only the first distribution, while a value of 0 will show only the second.</li>
+    </ul>
+
+    <h3>Fractal Distribution</h3>
+    <p>This distribution is generated using a Fractional Brownian Motion (fBm) algorithm. This creates a time series with "memory," where the next value is influenced by the previous values.</p>
+    <ul>
+        <li><strong>Hurst:</strong> The Hurst parameter controls the "memory" of the time series.
+            <ul>
+                <li>A value of <code>0.5</code> indicates a random walk (no memory).</li>
+                <li>A value greater than <code>0.5</code> indicates a persistent time series, where an increase is more likely to be followed by another increase.</li>
+                <li>A value less than <code>0.5</code> indicates an anti-persistent time series, where an increase is more likely to be followed by a decrease.</li>
+            </ul>
+        </li>
+    </ul>
+
+    <h2>Autoregression</h2>
+    <p>The "Autoregression" parameter is available for all distributions except for the fractal distribution. This parameter introduces a relationship between the current value and the previous value in the time series. A higher value will result in a smoother time series.</p>
+
+</body>
+</html>

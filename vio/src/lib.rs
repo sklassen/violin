@@ -6,7 +6,8 @@ use statrs::distribution::{Normal, Continuous};
 use rand::distributions::Distribution;
 use rand::thread_rng;
 use rand_distr::{Normal as RandNormal, Uniform as RandUniform, SkewNormal};
-use rand::Rng;
+use num_complex::Complex;
+use rustfft::{FftPlanner, num_traits::Zero};
 
 #[derive(Serialize)]
 pub struct ViolinData {
@@ -235,6 +236,67 @@ pub fn generate_bimodal_data(
     series
 }
 
+#[wasm_bindgen]
+pub fn generate_fractal_data(hurst: f64, n_samples: usize) -> Vec<f64> {
+    if n_samples == 0 {
+        return Vec::new();
+    }
+    if n_samples == 1 {
+        return vec![0.0];
+    }
+
+    let n = n_samples - 1;
+    let m = 2 * n;
+
+    // Step 1: Calculate the autocovariance function (ACF) of fGn
+    let mut acf = vec![0.0; n + 1];
+    for i in 0..=n {
+        let k = i as f64;
+        acf[i] = 0.5 * ((k + 1.0).powf(2.0 * hurst) - 2.0 * k.powf(2.0 * hurst) + (k - 1.0).abs().powf(2.0 * hurst));
+    }
+
+    // Step 2: Create the first row of the circulant covariance matrix
+    let mut circulant_row = vec![0.0; m];
+    circulant_row[0] = acf[0];
+    for i in 1..n {
+        circulant_row[i] = acf[i];
+        circulant_row[m - i] = acf[i];
+    }
+    circulant_row[n] = acf[n];
+
+    // Step 3: Use FFT to find the eigenvalues
+    let mut planner = FftPlanner::new();
+    let fft = planner.plan_fft_forward(m);
+    let mut buffer: Vec<Complex<f64>> = circulant_row.into_iter().map(|v| Complex::new(v, 0.0)).collect();
+    fft.process(&mut buffer);
+    let eigenvalues = buffer;
+
+    // Step 4: Generate complex random numbers
+    let mut rng = thread_rng();
+    let normal = RandNormal::new(0.0, 1.0).unwrap();
+    let mut z = vec![Complex::zero(); m];
+    z[0] = Complex::new(normal.sample(&mut rng) * (eigenvalues[0].re * m as f64).sqrt(), 0.0);
+    z[n] = Complex::new(normal.sample(&mut rng) * (eigenvalues[n].re * m as f64).sqrt(), 0.0);
+    for i in 1..n {
+        let re = normal.sample(&mut rng);
+        let im = normal.sample(&mut rng);
+        z[i] = Complex::new(re, im) * (0.5 * m as f64 * eigenvalues[i].re).sqrt();
+        z[m - i] = z[i].conj();
+    }
+
+    // Step 5 & 6: Perform inverse FFT
+    let ifft = planner.plan_fft_inverse(m);
+    ifft.process(&mut z);
+    let fgn: Vec<f64> = z.into_iter().take(n).map(|v| v.re / m as f64).collect();
+
+    // Step 7: Calculate cumulative sum for fBm
+    let mut fbm = vec![0.0; n_samples];
+    for i in 0..n {
+        fbm[i+1] = fbm[i] + fgn[i];
+    }
+    fbm
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -268,6 +330,12 @@ mod tests {
     #[wasm_bindgen_test]
     fn test_generate_bimodal_data() {
         let result = generate_bimodal_data(0.0, 1.0, 5.0, 1.0, 0.5, 0.5, 100);
+        assert_eq!(result.len(), 100);
+    }
+
+    #[wasm_bindgen_test]
+    fn test_generate_fractal_data() {
+        let result = generate_fractal_data(0.7, 100);
         assert_eq!(result.len(), 100);
     }
 

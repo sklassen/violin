@@ -11,6 +11,7 @@
 	const normalParams = { mean: 0, std_dev: 1, ar_coeff: 0.0 };
 	const skewedParams = { mean: 0, std_dev: 1, skew: 5, ar_coeff: 0.0 };
 	const bimodalParams = { mean1: -3, std_dev1: 1, mean2: 3, std_dev2: 1, weight: 0.5, ar_coeff: 0.0 };
+	const fractalParams = { hurst: 0.7 };
 
 	onMount(async () => {
 		try {
@@ -51,5 +52,6 @@
 		<InteractivePlot type="normal" initialParams={normalParams} />
 		<InteractivePlot type="skewed" initialParams={skewedParams} />
 		<InteractivePlot type="bimodal" initialParams={bimodalParams} />
+		<InteractivePlot type="fractal" initialParams={fractalParams} />
 	</main>
 {/if}
