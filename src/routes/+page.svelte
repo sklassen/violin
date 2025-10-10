@@ -38,8 +38,14 @@
 		width: 100%;
 		text-align: center;
 	}
+	.user-guide-link {
+		display: block;
+		text-align: center;
+		margin: 10px 0;
+	}
 </style>
 
+<a href="/assets/user_guide.html" class="user-guide-link">View User Guide</a>
 <h1>Interactive Svelte + Rust (WASM) Violin Plot Demo</h1>
 
 {#if error}
