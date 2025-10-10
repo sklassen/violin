@@ -5,13 +5,32 @@
 
 	let error = $state(null);
 	let initialized = $state(false);
+	let seed = $state(Math.floor(Math.random() * 1000000));
 
-	// Initial parameters for each plot type
-	const uniformParams = { min: -2, max: 2, ar_coeff: 0.0 };
-	const normalParams = { mean: 0, std_dev: 1, ar_coeff: 0.0 };
-	const skewedParams = { mean: 0, std_dev: 1, skew: 5, ar_coeff: 0.0 };
-	const bimodalParams = { mean1: -3, std_dev1: 1, mean2: 3, std_dev2: 1, weight: 0.5, ar_coeff: 0.0 };
-	const fractalParams = { hurst: 0.7 };
+	const distributionTypes = ['uniform', 'normal', 'skewed', 'bimodal', 'fractal'];
+
+	const defaultParams = {
+		uniform: { min: -2, max: 2, ar_coeff: 0.0 },
+		normal: { mean: 0, std_dev: 1, ar_coeff: 0.0 },
+		skewed: { mean: 0, std_dev: 1, skew: 0.05, ar_coeff: 0.0 },
+		bimodal: { mean1: -3, std_dev1: 1, mean2: 3, std_dev2: 1, weight: 0.5, ar_coeff: 0.0 },
+		fractal: { hurst: 0.7 }
+	};
+
+	let plots = $state([
+		{ id: 1, type: 'normal', params: { ...defaultParams.normal } },
+		{ id: 2, type: 'bimodal', params: { ...defaultParams.bimodal } },
+		{ id: 3, type: 'fractal', params: { ...defaultParams.fractal } }
+	]);
+
+	function changePlotType(index, newType) {
+		plots[index].type = newType;
+		plots[index].params = { ...defaultParams[newType] };
+	}
+
+	function randomizeSeed() {
+		seed = Math.floor(Math.random() * 1000000);
+	}
 
 	onMount(async () => {
 		try {
@@ -27,6 +46,14 @@
 </script>
 
 <style>
+	.global-controls {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		gap: 20px;
+		padding: 20px;
+		border-bottom: 1px solid #ccc;
+	}
 	main {
 		display: flex;
 		flex-wrap: wrap;
@@ -43,6 +70,15 @@
 		text-align: center;
 		margin: 10px 0;
 	}
+	.plot-selector {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 10px;
+		border: 1px solid #eee;
+		padding: 15px;
+		border-radius: 8px;
+	}
 </style>
 
 <a href="/assets/user_guide.html" class="user-guide-link">View User Guide</a>
@@ -53,11 +89,21 @@
 {:else if !initialized}
 	<p>Initializing WASM module...</p>
 {:else}
+	<div class="global-controls">
+		<label for="seed">Seed:</label>
+		<input type="number" id="seed" bind:value={seed} />
+		<button onclick={randomizeSeed}>Random</button>
+	</div>
 	<main>
-		<InteractivePlot type="uniform" initialParams={uniformParams} />
-		<InteractivePlot type="normal" initialParams={normalParams} />
-		<InteractivePlot type="skewed" initialParams={skewedParams} />
-		<InteractivePlot type="bimodal" initialParams={bimodalParams} />
-		<InteractivePlot type="fractal" initialParams={fractalParams} />
+		{#each plots as plot, i (plot.id)}
+			<div class="plot-selector">
+				<select onchange={(e) => changePlotType(i, e.target.value)} value={plot.type}>
+					{#each distributionTypes as type}
+						<option value={type}>{type.charAt(0).toUpperCase() + type.slice(1)}</option>
+					{/each}
+				</select>
+				<InteractivePlot type={plot.type} initialParams={plot.params} {seed} />
+			</div>
+		{/each}
 	</main>
 {/if}

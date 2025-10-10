@@ -4,7 +4,8 @@ use statrs::statistics::{Data, Min, Max, OrderStatistics};
 use statrs::statistics::Distribution as StatrsDistribution;
 use statrs::distribution::{Normal, Continuous};
 use rand::distributions::Distribution;
-use rand::thread_rng;
+use rand::{Rng, SeedableRng};
+use rand::rngs::StdRng;
 use rand_distr::{Normal as RandNormal, Uniform as RandUniform, SkewNormal};
 use num_complex::Complex;
 use rustfft::{FftPlanner, num_traits::Zero};
@@ -158,21 +159,21 @@ pub fn calculate_pnf_data(
 }
 
 // Helper function for AR(1) process for simple distributions
-fn generate_ar1_series<D>(dist: D, ar_coeff: f64, n_samples: usize) -> Vec<f64>
+fn generate_ar1_series<D, R>(dist: D, ar_coeff: f64, n_samples: usize, rng: &mut R) -> Vec<f64>
 where
     D: Distribution<f64>,
+    R: Rng + ?Sized,
 {
-    let mut rng = thread_rng();
     let mut series = Vec::with_capacity(n_samples);
     if n_samples == 0 {
         return series;
     }
 
-    let mut last_value = dist.sample(&mut rng);
+    let mut last_value = dist.sample(rng);
     series.push(last_value);
 
     for _ in 1..n_samples {
-        let new_value = ar_coeff * last_value + (1.0 - ar_coeff) * dist.sample(&mut rng);
+        let new_value = ar_coeff * last_value + (1.0 - ar_coeff) * dist.sample(rng);
         series.push(new_value);
         last_value = new_value;
     }
@@ -181,21 +182,24 @@ where
 
 
 #[wasm_bindgen]
-pub fn generate_uniform_data(min: f64, max: f64, ar_coeff: f64, n_samples: usize) -> Vec<f64> {
+pub fn generate_uniform_data(min: f64, max: f64, ar_coeff: f64, n_samples: usize, seed: u32) -> Vec<f64> {
+    let mut rng = StdRng::seed_from_u64(seed as u64);
     let dist = RandUniform::new(min, max);
-    generate_ar1_series(dist, ar_coeff, n_samples)
+    generate_ar1_series(dist, ar_coeff, n_samples, &mut rng)
 }
 
 #[wasm_bindgen]
-pub fn generate_normal_data(mean: f64, std_dev: f64, ar_coeff: f64, n_samples: usize) -> Vec<f64> {
+pub fn generate_normal_data(mean: f64, std_dev: f64, ar_coeff: f64, n_samples: usize, seed: u32) -> Vec<f64> {
+    let mut rng = StdRng::seed_from_u64(seed as u64);
     let dist = RandNormal::new(mean, std_dev).unwrap();
-    generate_ar1_series(dist, ar_coeff, n_samples)
+    generate_ar1_series(dist, ar_coeff, n_samples, &mut rng)
 }
 
 #[wasm_bindgen]
-pub fn generate_skewed_data(mean: f64, std_dev: f64, skew: f64, ar_coeff: f64, n_samples: usize) -> Vec<f64> {
+pub fn generate_skewed_data(mean: f64, std_dev: f64, skew: f64, ar_coeff: f64, n_samples: usize, seed: u32) -> Vec<f64> {
+    let mut rng = StdRng::seed_from_u64(seed as u64);
     let dist = SkewNormal::new(mean, std_dev, skew).unwrap();
-    generate_ar1_series(dist, ar_coeff, n_samples)
+    generate_ar1_series(dist, ar_coeff, n_samples, &mut rng)
 }
 
 #[wasm_bindgen]
@@ -204,9 +208,10 @@ pub fn generate_bimodal_data(
     mean2: f64, std_dev2: f64,
     weight: f64, // Weight for the first distribution
     ar_coeff: f64,
-    n_samples: usize
+    n_samples: usize,
+    seed: u32
 ) -> Vec<f64> {
-    let mut rng = thread_rng();
+    let mut rng = StdRng::seed_from_u64(seed as u64);
     let dist1 = RandNormal::new(mean1, std_dev1).unwrap();
     let dist2 = RandNormal::new(mean2, std_dev2).unwrap();
     let uniform = RandUniform::new(0.0, 1.0);
@@ -237,7 +242,7 @@ pub fn generate_bimodal_data(
 }
 
 #[wasm_bindgen]
-pub fn generate_fractal_data(hurst: f64, n_samples: usize) -> Vec<f64> {
+pub fn generate_fractal_data(hurst: f64, n_samples: usize, seed: u32) -> Vec<f64> {
     if n_samples == 0 {
         return Vec::new();
     }
@@ -272,7 +277,7 @@ pub fn generate_fractal_data(hurst: f64, n_samples: usize) -> Vec<f64> {
     let eigenvalues = buffer;
 
     // Step 4: Generate complex random numbers
-    let mut rng = thread_rng();
+    let mut rng = StdRng::seed_from_u64(seed as u64);
     let normal = RandNormal::new(0.0, 1.0).unwrap();
     let mut z = vec![Complex::zero(); m];
     z[0] = Complex::new(normal.sample(&mut rng) * (eigenvalues[0].re * m as f64).sqrt(), 0.0);
@@ -311,31 +316,31 @@ mod tests {
 
     #[wasm_bindgen_test]
     fn test_generate_uniform_data() {
-        let result = generate_uniform_data(0.0, 1.0, 0.5, 100);
+        let result = generate_uniform_data(0.0, 1.0, 0.5, 100, 0);
         assert_eq!(result.len(), 100);
     }
 
     #[wasm_bindgen_test]
     fn test_generate_normal_data() {
-        let result = generate_normal_data(0.0, 1.0, 0.5, 100);
+        let result = generate_normal_data(0.0, 1.0, 0.5, 100, 0);
         assert_eq!(result.len(), 100);
     }
 
     #[wasm_bindgen_test]
     fn test_generate_skewed_data() {
-        let result = generate_skewed_data(0.0, 1.0, 5.0, 0.5, 100);
+        let result = generate_skewed_data(0.0, 1.0, 5.0, 0.5, 100, 0);
         assert_eq!(result.len(), 100);
     }
 
     #[wasm_bindgen_test]
     fn test_generate_bimodal_data() {
-        let result = generate_bimodal_data(0.0, 1.0, 5.0, 1.0, 0.5, 0.5, 100);
+        let result = generate_bimodal_data(0.0, 1.0, 5.0, 1.0, 0.5, 0.5, 100, 0);
         assert_eq!(result.len(), 100);
     }
 
     #[wasm_bindgen_test]
     fn test_generate_fractal_data() {
-        let result = generate_fractal_data(0.7, 100);
+        let result = generate_fractal_data(0.7, 100, 0);
         assert_eq!(result.len(), 100);
     }
 
