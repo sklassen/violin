@@ -1,51 +1,55 @@
 <script>
 	import { onMount } from 'svelte';
-	
-	let lib = false;
+	import init from '$lib/vio-pkg/vio.js';
+	import InteractivePlot from '$lib/InteractivePlot.svelte';
 
-	let results = {};
-	let error = null;
-	let initialized = false;
+	let error = $state(null);
+	let initialized = $state(false);
+
+	// Initial parameters for each plot type
+	const uniformParams = { min: -2, max: 2, ar_coeff: 0.0 };
+	const normalParams = { mean: 0, std_dev: 1, ar_coeff: 0.0 };
+	const skewedParams = { mean: 0, std_dev: 1, skew: 5, ar_coeff: 0.0 };
+	const bimodalParams = { mean1: -3, std_dev1: 1, mean2: 3, std_dev2: 1, weight: 0.5, ar_coeff: 0.0 };
 
 	onMount(async () => {
 		try {
+			console.log('WASM module initializing...');
+			await init();
 			console.log('WASM module initialized.');
-			lib = await import("vio");
-			await lib.default();
-
-			const testData = lib.generate_test_data();
-			console.log('Generated Test Data:', testData);
-
-			const calculatedResults = {};
-			for (const key in testData) {
-				if (Object.prototype.hasOwnProperty.call(testData, key)) {
-					const data = testData[key];
-					if (data && data.length > 0) {
-						console.log(`Calculating violin data for ${key}...`);
-						calculatedResults[key] = lib.calculate_violin_data(data);
-					} else {
-						console.log(`Skipping ${key} as it has no data.`);
-						calculatedResults[key] = { error: 'No data provided' };
-					}
-				}
-			}
-			results = calculatedResults;
-			console.log('Violin Plot Calculation Results:', results);
-		} catch (e) {
+			initialized = true;
+		} catch (/** @type {any} */ e) {
 			console.error('Error during WASM execution:', e);
 			error = e;
 		}
 	});
 </script>
 
-<h1>Svelte + Rust (WASM) Violin Plot Demo</h1>
+<style>
+	main {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 20px;
+		justify-content: center;
+		padding: 20px;
+	}
+	h1 {
+		width: 100%;
+		text-align: center;
+	}
+</style>
+
+<h1>Interactive Svelte + Rust (WASM) Violin Plot Demo</h1>
 
 {#if error}
 	<p style="color: red;">Error: {error.message}</p>
 {:else if !initialized}
 	<p>Initializing WASM module...</p>
 {:else}
-	<p>WASM module loaded and calculations complete. See console for details.</p>
-	<h2>Calculation Results:</h2>
-	<pre>{JSON.stringify(results, null, 2)}</pre>
+	<main>
+		<InteractivePlot type="uniform" initialParams={uniformParams} />
+		<InteractivePlot type="normal" initialParams={normalParams} />
+		<InteractivePlot type="skewed" initialParams={skewedParams} />
+		<InteractivePlot type="bimodal" initialParams={bimodalParams} />
+	</main>
 {/if}
