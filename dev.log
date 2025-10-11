@@ -1,3 +1,12 @@
 
 > violin@0.0.1 dev
 > vite dev
+
+The following Vite config options will be overridden by SvelteKit:
+  - base
+Re-optimizing dependencies because lockfile has changed
+
+  VITE v5.4.18  ready in 1398 ms
+
+  ➜  Local:   http://localhost:5173/violin
+  ➜  Network: use --host to expose

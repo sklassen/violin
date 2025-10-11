@@ -1,8 +1,10 @@
 <script>
     import * as d3 from 'd3';
 
+	/** @type {{ data: { from: number; to: number; direction: 'Up' | 'Down' }[]; boxSize: number; width?: number; height?: number }} */
     let { data, boxSize, width = 320, height = 200 } = $props();
 
+	/** @type {HTMLElement} */
     let container;
 
     $effect(() => {
@@ -20,7 +22,7 @@
                 .append("g")
                 .attr("transform", `translate(${margin.left}, ${margin.top})`);
 
-            const allValues = data.flatMap(d => [d.from, d.to]);
+            const allValues = data.flatMap((/** @type {{ from: number; to: number; }} */ d) => [d.from, d.to]);
             const yMin = Math.floor(d3.min(allValues) / boxSize) * boxSize;
             const yMax = Math.ceil(d3.max(allValues) / boxSize) * boxSize;
 
@@ -47,7 +49,7 @@
             svg.append("g").call(d3.axisLeft(y).ticks(10));
             svg.append("g")
                .attr("transform", `translate(0, ${innerHeight})`)
-               .call(d3.axisBottom(x).tickFormat(i => i + 1));
+               .call(d3.axisBottom(x).tickFormat((/** @type {any} */ i) => i + 1));
 
             const columnWidth = x.bandwidth();
             const symbolSize = Math.min(columnWidth, Math.abs(y(yMax) - y(yMax + boxSize))) * 0.7;

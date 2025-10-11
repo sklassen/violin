@@ -2,7 +2,9 @@
 	import { onMount } from 'svelte';
 	import init from '$lib/vio-pkg/vio.js';
 	import InteractivePlot from '$lib/InteractivePlot.svelte';
+	import TrainingAndGuessing from '$lib/TrainingAndGuessing.svelte';
 
+	/** @type {Error | null} */
 	let error = $state(null);
 	let initialized = $state(false);
 	let seed = $state(Math.floor(Math.random() * 1000000));
@@ -17,15 +19,27 @@
 		fractal: { hurst: 0.7 }
 	};
 
-	let plots = $state([
-		{ id: 1, type: 'normal', params: { ...defaultParams.normal } },
-		{ id: 2, type: 'bimodal', params: { ...defaultParams.bimodal } },
-		{ id: 3, type: 'fractal', params: { ...defaultParams.fractal } }
-	]);
+	let plots = $state(/**
+	 * @type {{
+	 *   id: number;
+	 *   type: string;
+	 *   params: any;
+	 *   rawData: number[];
+	 * }[]}
+	 */ ([
+		{ id: 1, type: 'normal', params: { ...defaultParams.normal }, rawData: /** @type {number[]} */ ([]) },
+		{ id: 2, type: 'bimodal', params: { ...defaultParams.bimodal }, rawData: /** @type {number[]} */ ([]) },
+		{ id: 3, type: 'fractal', params: { ...defaultParams.fractal }, rawData: /** @type {number[]} */ ([]) }
+	]));
 
+	/**
+	 * @param {number} index
+	 * @param {string} newType
+	 */
 	function changePlotType(index, newType) {
 		plots[index].type = newType;
-		plots[index].params = { ...defaultParams[newType] };
+		plots[index].params = { ...defaultParams[/** @type {keyof typeof defaultParams} */ (newType)] };
+		plots[index].rawData = [];
 	}
 
 	function randomizeSeed() {
@@ -97,13 +111,22 @@
 	<main>
 		{#each plots as plot, i (plot.id)}
 			<div class="plot-selector">
-				<select onchange={(e) => changePlotType(i, e.target.value)} value={plot.type}>
+				<select
+					onchange={(/** @type {Event & { currentTarget: HTMLSelectElement }} */ e) => changePlotType(i, e.currentTarget.value)}
+					value={plot.type}
+				>
 					{#each distributionTypes as type}
 						<option value={type}>{type.charAt(0).toUpperCase() + type.slice(1)}</option>
 					{/each}
 				</select>
-				<InteractivePlot type={plot.type} initialParams={plot.params} {seed} />
+				<InteractivePlot
+					type={plot.type}
+					initialParams={plot.params}
+					{seed}
+					bind:rawData={plot.rawData}
+				/>
 			</div>
 		{/each}
 	</main>
+	<TrainingAndGuessing {plots} />
 {/if}

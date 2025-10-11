@@ -13,12 +13,22 @@
 		generate_fractal_data
 	} from '$lib/vio-pkg/vio.js';
 
-	let { type, initialParams, seed } = $props();
+	/**
+	 * @type {{
+	 *   type: string;
+	 *   initialParams: any;
+	 *   seed: number;
+	 *   rawData: number[];
+	 * }}
+	 */
+	let { type, initialParams, seed, rawData = $bindable() } = $props();
 
 	let params = $state({ ...initialParams, boxSize: 1.0 });
-	let rawData = $state([]);
+	/** @type {any} */
 	let plotData = $state(null);
+	/** @type {[number, number][]} */
 	let plotTSData = $state([]);
+	/** @type {{ from: number; to: number; direction: 'Up' | 'Down' }[]} */
 	let pnfData = $state([]);
     let title = type.charAt(0).toUpperCase() + type.slice(1) + " Distribution";
 
@@ -62,6 +72,7 @@
 			plotData = calculate_violin_data(rawData);
 
 			const cumulative_sum_values = [];
+			/** @type {[number, number][]} */
 			const cumulative_sum_pairs = [];
 			let current_sum = 0.0;
 			for (let i = 0; i < rawData.length; i++) {
