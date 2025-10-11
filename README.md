@@ -1,38 +1,35 @@
-# sv
+# Interactive Violin Plot Demo
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+This is an interactive web application that demonstrates the use of violin plots to visualize different types of time series data. The application is built with Svelte for the frontend and Rust compiled to WebAssembly (WASM) for the data generation and analysis.
 
-## Creating a project
+## Features
 
-If you're seeing this, you've probably already done this step. Congrats!
+*   **Interactive Controls:** Adjust the parameters of each distribution and see the plots update in real-time.
+*   **Multiple Distributions:** The application supports the following distributions:
+    *   Uniform
+    *   Normal
+    *   Skewed
+    *   Bimodal
+    *   Fractal (Fractional Brownian Motion)
+*   **Multiple Plot Types:** For each distribution, the application displays:
+    *   A violin plot of the raw data.
+    *   A time series plot of the cumulative sum of the data.
+    *   A point and figure chart of the cumulative sum.
 
-```sh
-# create a new project in the current directory
-npx sv create
+## Running the Application
 
-# create a new project in my-app
-npx sv create my-app
-```
+To run the application locally, you will need to have Node.js and Rust installed.
 
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
-
-## Building
-
-To create a production version of your app:
-
-```sh
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+1.  **Install Dependencies:**
+    ```bash
+    npm install
+    ```
+2.  **Build the WebAssembly Module:**
+    ```bash
+    npm run wasm
+    ```
+3.  **Run the Development Server:**
+    ```bash
+    npm run dev
+    ```
+The application will be available at `http://localhost:5173`.
