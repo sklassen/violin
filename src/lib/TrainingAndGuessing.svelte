@@ -18,12 +18,17 @@
 	/** @type {string | null} */
 	let predictionResult = $state(null);
 	let selectedPlotIndex = $state(0);
+	let epochs = $state(20);
+	let batchSize = $state(32);
+	let trainingProgress = $state(0);
+	/** @type {{ loss: number; acc: number; mae: number } | null} */
+	let finalTrainingStats = $state(null);
 
 	const N_SAMPLES = 300;
 	const TIME_STEP = 20;
 
 	/**
-	 * @param {number[]} data
+	 * @param {number[] | Float64Array} data
 	 * @param {number} timeStep
 	 * @returns {[number[][], number[]]}
 	 */
@@ -39,6 +44,8 @@
 
 	async function trainModel() {
 		trainingStatus = 'Preparing data...';
+		trainingProgress = 0;
+		finalTrainingStats = null;
 
 		/** @type {number[][]} */
 		const allX = [];
@@ -92,15 +99,16 @@
 			metrics: { clf_output: 'accuracy', reg_output: 'mae' }
 		});
 
-		await newModel.fit(tensorX, [tensorY_clf, tensorY_reg], {
-			epochs: 20,
-			batchSize: 32,
+		const history = await newModel.fit(tensorX, [tensorY_clf, tensorY_reg], {
+			epochs: epochs,
+			batchSize: batchSize,
 			callbacks: {
 				onEpochEnd: (epoch, logs) => {
 					if (logs) {
-						trainingStatus = `Epoch ${epoch + 1}: loss = ${logs.loss.toFixed(4)}, acc = ${(
-							logs.clf_output_acc || 0
-						).toFixed(4)}`;
+						trainingStatus = `Epoch ${epoch + 1}/${epochs}: loss = ${logs.loss.toFixed(
+							4
+						)}, acc = ${(logs.clf_output_acc || 0).toFixed(4)}`;
+						trainingProgress = epoch + 1;
 					}
 				}
 			}
@@ -108,6 +116,12 @@
 
 		model = newModel;
 		trainingStatus = 'Training complete!';
+		const lastEpochIndex = history.epoch.length - 1;
+		finalTrainingStats = {
+			loss: /** @type {number} */ (history.history.loss[lastEpochIndex]),
+			acc: /** @type {number} */ (history.history.clf_output_acc[lastEpochIndex]),
+			mae: /** @type {number} */ (history.history.reg_output_mae[lastEpochIndex])
+		};
 	}
 
 	async function makePrediction() {
@@ -147,13 +161,49 @@
 	button {
 		margin-right: 10px;
 	}
+	.training-controls {
+		display: flex;
+		gap: 15px;
+		align-items: center;
+		margin-bottom: 15px;
+	}
+	.training-controls input {
+		width: 60px;
+	}
+	progress {
+		width: 100%;
+		margin-top: 10px;
+	}
+	.stats {
+		margin-top: 15px;
+		border: 1px solid #ddd;
+		padding: 10px;
+		border-radius: 4px;
+	}
 </style>
 
 <div class="ml-container">
 	<div class="training">
 		<h2>I) Training</h2>
+		<div class="training-controls">
+			<label for="epochs">Epochs:</label>
+			<input id="epochs" type="number" bind:value={epochs} />
+			<label for="batchSize">Batch Size:</label>
+			<input id="batchSize" type="number" bind:value={batchSize} />
+		</div>
 		<button onclick={trainModel}>Train Model</button>
 		<p>Status: {trainingStatus}</p>
+		{#if trainingProgress > 0}
+			<progress value={trainingProgress} max={epochs}></progress>
+		{/if}
+		{#if finalTrainingStats}
+			<div class="stats">
+				<h3>Final Training Stats</h3>
+				<p>Loss: {finalTrainingStats.loss.toFixed(4)}</p>
+				<p>Accuracy: {finalTrainingStats.acc.toFixed(4)}</p>
+				<p>MAE: {finalTrainingStats.mae.toFixed(4)}</p>
+			</div>
+		{/if}
 	</div>
 
 	<div class="guessing">

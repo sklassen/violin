@@ -14,11 +14,12 @@
 	} from '$lib/vio-pkg/vio.js';
 
 	/**
+	/**
 	 * @type {{
 	 *   type: string;
 	 *   initialParams: any;
 	 *   seed: number;
-	 *   rawData: number[];
+	 *   rawData: number[] | Float64Array;
 	 * }}
 	 */
 	let { type, initialParams, seed, rawData = $bindable() } = $props();
@@ -69,7 +70,7 @@
 	// This effect calculates plot data whenever rawData or boxSize changes
 	$effect(() => {
 		if (rawData && rawData.length > 0) {
-			plotData = calculate_violin_data(rawData);
+			plotData = calculate_violin_data(new Float64Array(rawData));
 
 			const cumulative_sum_values = [];
 			/** @type {[number, number][]} */
@@ -83,7 +84,7 @@
 			plotTSData = cumulative_sum_pairs;
 
 			// Calculate P&F data
-			pnfData = calculate_pnf_data(cumulative_sum_values, params.boxSize, 3);
+			pnfData = calculate_pnf_data(new Float64Array(cumulative_sum_values), params.boxSize, 3);
 
 		} else {
 			plotData = null;
