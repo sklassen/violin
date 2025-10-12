@@ -18,7 +18,7 @@
 	/** @type {string | null} */
 	let predictionResult = $state(null);
 	let selectedPlotIndex = $state(0);
-	let epochs = $state(200);
+	let epochs = $state(20);
 	let batchSize = $state(32);
 	let trainingProgress = $state(0);
 	/** @type {{ loss: number; acc: number; mae: number } | null} */
@@ -49,8 +49,11 @@
 
 		setTimeout(async () => {
 			try {
+				/** @type {number[][]} */
 				const allX = [];
+				/** @type {number[]} */
 				const allY_reg = [];
+				/** @type {number[]} */
 				const allY_clf = [];
 
 				plots.forEach((plot, index) => {
@@ -140,8 +143,8 @@
 			return;
 		}
 
-		const sequence = plot.rawData.slice(plot.rawData.length - TIME_STEP);
-		const inputTensor = tf.tensor3d([sequence], [1, TIME_STEP, 1]);
+		const sequence = Array.from(plot.rawData.slice(plot.rawData.length - TIME_STEP));
+		const inputTensor = tf.tensor(sequence).reshape([1, TIME_STEP, 1]);
 		const [pred_clf, pred_reg] = /** @type {tf.Tensor[]} */ (model.predict(inputTensor));
 
 		const predictedIndex = pred_clf.argMax(-1).dataSync()[0];
