@@ -18,7 +18,7 @@
 	/** @type {string | null} */
 	let predictionResult = $state(null);
 	let selectedPlotIndex = $state(0);
-	let epochs = $state(20);
+	let epochs = $state(200);
 	let batchSize = $state(32);
 	let trainingProgress = $state(0);
 	/** @type {{ loss: number; acc: number; mae: number } | null} */
@@ -36,92 +36,96 @@
 		const X = [];
 		const y = [];
 		for (let i = 0; i < data.length - timeStep; i++) {
-			X.push(data.slice(i, i + timeStep));
+			X.push(Array.from(data.slice(i, i + timeStep)));
 			y.push(data[i + timeStep]);
 		}
 		return [X, y];
 	}
 
-	async function trainModel() {
-		trainingStatus = 'Preparing data...';
-		trainingProgress = 0;
+	function trainModel() {
+		trainingStatus = 'Training model...';
+		trainingProgress = 1;
 		finalTrainingStats = null;
 
-		/** @type {number[][]} */
-		const allX = [];
-		/** @type {number[]} */
-		const allY_reg = [];
-		/** @type {number[]} */
-		const allY_clf = [];
+		setTimeout(async () => {
+			try {
+				const allX = [];
+				const allY_reg = [];
+				const allY_clf = [];
 
-		plots.forEach((plot, index) => {
-			if (plot.rawData.length > 0) {
-				const [X, y_reg] = createSequences(plot.rawData, TIME_STEP);
-				const y_clf = Array(X.length).fill(index);
-				allX.push(...X);
-				allY_reg.push(...y_reg);
-				allY_clf.push(...y_clf);
-			}
-		});
-
-		if (allX.length === 0) {
-			trainingStatus = 'Error: No data to train on.';
-			return;
-		}
-
-		trainingStatus = 'Training model...';
-
-		const tensorX = tf.tensor3d(allX, [allX.length, TIME_STEP, 1]);
-		const tensorY_reg = tf.tensor2d(allY_reg, [allY_reg.length, 1]);
-		const tensorY_clf = tf.oneHot(tf.tensor1d(allY_clf, 'int32'), plots.length);
-
-		const input = tf.input({ shape: [TIME_STEP, 1] });
-		const lstm = /** @type {tf.SymbolicTensor} */ (
-			tf.layers.lstm({ units: 32, returnSequences: false }).apply(input)
-		);
-
-		const clf_output = tf.layers
-			.dense({ units: plots.length, activation: 'softmax', name: 'clf_output' })
-			.apply(lstm);
-		const reg_output = tf.layers.dense({ units: 1, name: 'reg_output' }).apply(lstm);
-
-		const newModel = tf.model({
-			inputs: input,
-			outputs: [
-				/** @type {tf.SymbolicTensor} */ (clf_output),
-				/** @type {tf.SymbolicTensor} */ (reg_output)
-			]
-		});
-
-		newModel.compile({
-			optimizer: 'adam',
-			loss: { clf_output: 'categoricalCrossentropy', reg_output: 'meanSquaredError' },
-			metrics: { clf_output: 'accuracy', reg_output: 'mae' }
-		});
-
-		const history = await newModel.fit(tensorX, [tensorY_clf, tensorY_reg], {
-			epochs: epochs,
-			batchSize: batchSize,
-			callbacks: {
-				onEpochEnd: (epoch, logs) => {
-					if (logs) {
-						trainingStatus = `Epoch ${epoch + 1}/${epochs}: loss = ${logs.loss.toFixed(
-							4
-						)}, acc = ${(logs.clf_output_acc || 0).toFixed(4)}`;
-						trainingProgress = epoch + 1;
+				plots.forEach((plot, index) => {
+					if (plot.rawData.length > 0) {
+						const [X, y_reg] = createSequences(plot.rawData, TIME_STEP);
+						const y_clf = Array(X.length).fill(index);
+						allX.push(...X);
+						allY_reg.push(...y_reg);
+						allY_clf.push(...y_clf);
 					}
-				}
-			}
-		});
+				});
 
-		model = newModel;
-		trainingStatus = 'Training complete!';
-		const lastEpochIndex = history.epoch.length - 1;
-		finalTrainingStats = {
-			loss: /** @type {number} */ (history.history.loss[lastEpochIndex]),
-			acc: /** @type {number} */ (history.history.clf_output_acc[lastEpochIndex]),
-			mae: /** @type {number} */ (history.history.reg_output_mae[lastEpochIndex])
-		};
+				if (allX.length === 0) {
+					trainingStatus = 'Error: No data to train on.';
+					trainingProgress = 0;
+					return;
+				}
+
+				const flatX = allX.flat();
+				const tensorX = tf.tensor3d(flatX, [allX.length, TIME_STEP, 1]);
+				const tensorY_reg = tf.tensor2d(allY_reg, [allY_reg.length, 1]);
+				const tensorY_clf = tf.oneHot(tf.tensor1d(allY_clf, 'int32'), plots.length);
+
+				const input = tf.input({ shape: [TIME_STEP, 1] });
+				const lstm = /** @type {tf.SymbolicTensor} */ (
+					tf.layers.lstm({ units: 32, returnSequences: false }).apply(input)
+				);
+
+				const clf_output = tf.layers
+					.dense({ units: plots.length, activation: 'softmax', name: 'clf_output' })
+					.apply(lstm);
+				const reg_output = tf.layers.dense({ units: 1, name: 'reg_output' }).apply(lstm);
+
+				const newModel = tf.model({
+					inputs: input,
+					outputs: [
+						/** @type {tf.SymbolicTensor} */ (clf_output),
+						/** @type {tf.SymbolicTensor} */ (reg_output)
+					]
+				});
+
+				newModel.compile({
+					optimizer: 'adam',
+					loss: { clf_output: 'categoricalCrossentropy', reg_output: 'meanSquaredError' },
+					metrics: { clf_output: 'accuracy', reg_output: 'mae' }
+				});
+
+				const history = await newModel.fit(tensorX, [tensorY_clf, tensorY_reg], {
+					epochs: epochs,
+					batchSize: batchSize,
+					callbacks: {
+						onEpochEnd: (epoch, logs) => {
+							if (logs) {
+								trainingStatus = `Epoch ${epoch + 1}/${epochs}: loss = ${logs.loss.toFixed(
+									4
+								)}, acc = ${(logs.clf_output_acc || 0).toFixed(4)}`;
+								trainingProgress = epoch + 2;
+							}
+						}
+					}
+				});
+
+				model = newModel;
+				trainingStatus = 'Training complete!';
+				const lastEpochIndex = history.epoch.length - 1;
+				finalTrainingStats = {
+					loss: /** @type {number} */ (history.history.loss[lastEpochIndex]),
+					acc: /** @type {number} */ (history.history.clf_output_acc[lastEpochIndex]),
+					mae: /** @type {number} */ (history.history.reg_output_mae[lastEpochIndex])
+				};
+			} catch (/** @type {any} */ e) {
+				trainingStatus = `Error: Training uncompleted. ${e.message}`;
+				trainingProgress = 0;
+			}
+		}, 10);
 	}
 
 	async function makePrediction() {
@@ -193,7 +197,7 @@
 		</div>
 		<button onclick={trainModel}>Train Model</button>
 		<p>Status: {trainingStatus}</p>
-		{#if trainingProgress > 0}
+		{#if trainingProgress > 0 && trainingProgress <= epochs}
 			<progress value={trainingProgress} max={epochs}></progress>
 		{/if}
 		{#if finalTrainingStats}
