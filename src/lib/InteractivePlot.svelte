@@ -20,17 +20,16 @@
 	 *   initialParams: any;
 	 *   seed: number;
 	 *   rawData: number[] | Float64Array;
+	 *   pnfData: { from: number; to: number; direction: 'Up' | 'Down' }[];
 	 * }}
 	 */
-	let { type, initialParams, seed, rawData = $bindable() } = $props();
+	let { type, initialParams, seed, rawData = $bindable(), pnfData = $bindable() } = $props();
 
 	let params = $state({ ...initialParams, boxSize: 1.0 });
 	/** @type {any} */
 	let plotData = $state(null);
 	/** @type {[number, number][]} */
 	let plotTSData = $state([]);
-	/** @type {{ from: number; to: number; direction: 'Up' | 'Down' }[]} */
-	let pnfData = $state([]);
     let title = type.charAt(0).toUpperCase() + type.slice(1) + " Distribution";
 
 	const n_samples = 300;
@@ -119,6 +118,15 @@
     }
     .plot-panel {
         min-height: 220px; /* Ensures all plot panels have same height */
+    }
+    .data-panel {
+        width: 100%;
+        padding: 10px;
+    }
+    textarea {
+        width: 100%;
+        height: 100px;
+        font-family: monospace;
     }
     .controls {
         width: 100%;
@@ -232,5 +240,13 @@
         {#if pnfData.length > 0}
             <PointAndFigureChart data={pnfData} boxSize={params.boxSize} width={320} height={plotHeight} />
         {/if}
+    </div>
+    <div class="panel data-panel">
+        <label for="rawData">Raw Time Series Data:</label>
+        <textarea id="rawData" readonly>{rawData.join(', ')}</textarea>
+    </div>
+    <div class="panel data-panel">
+        <label for="pnfData">Point & Figure Data:</label>
+        <textarea id="pnfData" readonly>{JSON.stringify(pnfData)}</textarea>
     </div>
 </div>

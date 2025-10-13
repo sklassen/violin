@@ -25,11 +25,12 @@
 	 *   type: string;
 	 *   params: any;
 	 *   rawData: number[];
+	 *   pnfData: { from: number; to: number; direction: 'Up' | 'Down' }[];
 	 * }[]}
 	 */ ([
-		{ id: 1, type: 'normal', params: { ...defaultParams.normal }, rawData: /** @type {number[]} */ ([]) },
-		{ id: 2, type: 'bimodal', params: { ...defaultParams.bimodal }, rawData: /** @type {number[]} */ ([]) },
-		{ id: 3, type: 'fractal', params: { ...defaultParams.fractal }, rawData: /** @type {number[]} */ ([]) }
+		{ id: 1, type: 'normal', params: { ...defaultParams.normal }, rawData: /** @type {number[]} */ ([]), pnfData: /** @type {{ from: number; to: number; direction: 'Up' | 'Down' }[]} */ ([]) },
+		{ id: 2, type: 'bimodal', params: { ...defaultParams.bimodal }, rawData: /** @type {number[]} */ ([]), pnfData: /** @type {{ from: number; to: number; direction: 'Up' | 'Down' }[]} */ ([]) },
+		{ id: 3, type: 'fractal', params: { ...defaultParams.fractal }, rawData: /** @type {number[]} */ ([]), pnfData: /** @type {{ from: number; to: number; direction: 'Up' | 'Down' }[]} */ ([]) }
 	]));
 
 	/**
@@ -40,6 +41,7 @@
 		plots[index].type = newType;
 		plots[index].params = { ...defaultParams[/** @type {keyof typeof defaultParams} */ (newType)] };
 		plots[index].rawData = [];
+		plots[index].pnfData = [];
 	}
 
 	function randomizeSeed() {
@@ -124,6 +126,7 @@
 					initialParams={plot.params}
 					{seed}
 					bind:rawData={plot.rawData}
+					bind:pnfData={plot.pnfData}
 				/>
 			</div>
 		{/each}
