@@ -1,9 +1,9 @@
 <script>
 	import * as tf from '@tensorflow/tfjs';
-	import InteractivePlot from '$lib/InteractivePlot.svelte';
 	import PointAndFigureChart from '$lib/PointAndFigureChart.svelte';
 	import ViolinPlot from '$lib/ViolinPlot.svelte';
 	import TimeSeriesPlot from '$lib/TimeSeriesPlot.svelte';
+	import ConfusionMatrix from '$lib/ConfusionMatrix.svelte';
 	import { calculate_violin_data, calculate_pnf_data } from '$lib/vio-pkg/vio.js';
 
 	/**
@@ -23,12 +23,13 @@
 	let trainingStatus = $state('Not started');
 	/** @type {string | null} */
 	let predictionResult = $state(null);
-	let selectedPlotIndex = $state(0);
 	let epochs = $state(20);
 	let batchSize = $state(32);
 	let trainingProgress = $state(0);
 	/** @type {{ loss: number; acc: number; mae: number } | null} */
 	let finalTrainingStats = $state(null);
+	/** @type {number[][] | null} */
+	let confusionMatrix = $state(null);
 
 	let isTraining = $state(false);
 	let stopTrainingFlag = false;
@@ -48,34 +49,6 @@
 
 	function stopTraining() {
 		stopTrainingFlag = true;
-	}
-
-	/** @type {tf.LayersModel | null} */
-	let pnfModel = $state(null);
-	let pnfTrainingStatus = $state('Not started');
-	/** @type {string | null} */
-	let pnfPredictionResult = $state(null);
-
-	let pnfEpochs = $state(100);
-	let pnfBatchSize = $state(16);
-	let pnfTrainingProgress = $state(0);
-	let isPnfTraining = $state(false);
-	let stopPnfTrainingFlag = false;
-
-	function resetPnfModel() {
-		if (pnfModel) {
-			tf.dispose(pnfModel);
-		}
-		pnfModel = null;
-		pnfTrainingStatus = 'Not started';
-		pnfPredictionResult = null;
-		pnfTrainingProgress = 0;
-		isPnfTraining = false;
-		stopPnfTrainingFlag = false;
-	}
-
-	function stopPnfTraining() {
-		stopPnfTrainingFlag = true;
 	}
 
 	let guessingData = $state('');
@@ -119,7 +92,6 @@
 		guessingData = formattedData.join(', ');
 	}
 
-	const N_SAMPLES = 300;
 	const TIME_STEP = 20;
 
 	/**
@@ -143,6 +115,7 @@
 		trainingStatus = 'Training...';
 		trainingProgress = 0;
 		finalTrainingStats = null;
+		confusionMatrix = null;
 
 		setTimeout(async () => {
 			try {
@@ -226,6 +199,14 @@
 						acc: /** @type {number} */ (history.history.clf_output_acc[lastEpochIndex]),
 						mae: /** @type {number} */ (history.history.reg_output_mae[lastEpochIndex])
 					};
+
+					// Compute and store the confusion matrix
+					const [pred_clf] = /** @type {tf.Tensor[]} */ (model.predict(tensorX));
+					const pred_classes = pred_clf.argMax(-1);
+					const true_classes = tf.tensor1d(allY_clf, 'int32');
+					confusionMatrix = /** @type {any} */ (
+						tf.math.confusionMatrix(true_classes, pred_classes, plots.length).arraySync()
+					);
 				}
 			} catch (/** @type {any} */ e) {
 				trainingStatus = `Error: ${e.message}`;
@@ -307,121 +288,6 @@
 		} else {
 			predictedPnfBar = null;
 		}
-	}
-
-	const PNF_TIME_STEP = 5;
-	/** @type {string[]} */
-	let pnfVocab = $state([]);
-	let pnfModelTraining = $state(false);
-
-	/**
-	 * @param {{ from: number; to: number; direction: 'Up' | 'Down' }} pnf
-	 * @returns {string}
-	 */
-	function pnfToString(pnf) {
-		return `${pnf.direction[0]}(${pnf.from.toFixed(1)},${pnf.to.toFixed(1)})`;
-	}
-
-	async function trainPnfModel() {
-		isPnfTraining = true;
-		stopPnfTrainingFlag = false;
-		pnfTrainingStatus = 'Preparing P&F data...';
-		pnfTrainingProgress = 0;
-
-		setTimeout(async () => {
-			try {
-				const allPnfStrings = plots.flatMap(p => p.pnfData.map(pnfToString));
-				pnfVocab = [...new Set(allPnfStrings)];
-				const pnfVocabSize = pnfVocab.length;
-
-				const sequences = [];
-				const nextBars = [];
-				for (const plot of plots) {
-					if (plot.pnfData.length > PNF_TIME_STEP) {
-						const stringData = plot.pnfData.map(pnfToString);
-						for (let i = 0; i < stringData.length - PNF_TIME_STEP; i++) {
-							sequences.push(stringData.slice(i, i + PNF_TIME_STEP));
-							nextBars.push(stringData[i + PNF_TIME_STEP]);
-						}
-					}
-				}
-
-				if (sequences.length === 0) {
-					pnfTrainingStatus = 'Not enough data to train P&F model.';
-					isPnfTraining = false;
-					return;
-				}
-
-				const X = sequences.map(seq => seq.map(bar => pnfVocab.indexOf(bar)));
-				const y = nextBars.map(bar => pnfVocab.indexOf(bar));
-
-				const tensorX = tf.tensor2d(X, [sequences.length, PNF_TIME_STEP]);
-				const tensorY = tf.oneHot(tf.tensor1d(y, 'int32'), pnfVocabSize);
-
-				const input = tf.input({ shape: [PNF_TIME_STEP] });
-				const embedding = tf.layers.embedding({ inputDim: pnfVocabSize, outputDim: 32 }).apply(input);
-				const lstm = /** @type {tf.SymbolicTensor} */ (
-					tf.layers.lstm({ units: 32, returnSequences: false }).apply(embedding)
-				);
-				const output = tf.layers.dense({ units: pnfVocabSize, activation: 'softmax' }).apply(lstm);
-
-				const newPnfModel = tf.model({
-					inputs: input,
-					outputs: /** @type {tf.SymbolicTensor} */ (output)
-				});
-				newPnfModel.compile({ loss: 'categoricalCrossentropy', optimizer: 'adam', metrics: ['accuracy'] });
-
-				pnfTrainingStatus = 'Training P&F model...';
-				await newPnfModel.fit(tensorX, tensorY, {
-					epochs: pnfEpochs,
-					batchSize: pnfBatchSize,
-					callbacks: {
-						onEpochEnd: (epoch, logs) => {
-							if (stopPnfTrainingFlag) {
-								newPnfModel.stopTraining = true;
-							}
-							if (logs) {
-								pnfTrainingStatus = `Epoch ${epoch}/${pnfEpochs - 1}: loss = ${logs.loss.toFixed(
-									4
-								)}, acc = ${logs.acc}`;
-								pnfTrainingProgress = epoch + 1;
-							}
-						}
-					}
-				});
-
-				if (stopPnfTrainingFlag) {
-					pnfTrainingStatus = 'P&F Model training stopped by user.';
-				} else {
-					pnfModel = newPnfModel;
-					pnfTrainingStatus = 'P&F Model training complete!';
-				}
-			} catch (/** @type {any} */ e) {
-				pnfTrainingStatus = `Error: ${e.message}`;
-			} finally {
-				isPnfTraining = false;
-			}
-		}, 10);
-	}
-
-	async function predictNextPnfBar() {
-		if (!pnfModel) {
-			pnfPredictionResult = 'P&F model not trained yet.';
-			return;
-		}
-
-		const plot = plots[selectedPlotIndex];
-		if (plot.pnfData.length < PNF_TIME_STEP) {
-			pnfPredictionResult = 'Not enough P&F data for prediction.';
-			return;
-		}
-
-		const sequence = plot.pnfData.slice(plot.pnfData.length - PNF_TIME_STEP).map(pnfToString);
-		const inputX = sequence.map(bar => pnfVocab.indexOf(bar));
-		const inputTensor = tf.tensor2d([inputX], [1, PNF_TIME_STEP]);
-		const prediction = /** @type {tf.Tensor} */ (pnfModel.predict(inputTensor));
-		const predictedIndex = await prediction.argMax(-1).data();
-		pnfPredictionResult = `Predicted next P&F bar: ${pnfVocab[predictedIndex[0]]}`;
 	}
 </script>
 
@@ -512,6 +378,12 @@
 				<p>MAE: {finalTrainingStats.mae.toFixed(4)}</p>
 			</div>
 		{/if}
+		{#if confusionMatrix}
+			<div class="stats">
+				<h3>Confusion Matrix</h3>
+				<ConfusionMatrix matrix={confusionMatrix} labels={plots.map(p => p.type)} />
+			</div>
+		{/if}
 	</div>
 
 	<div class="guessing">
@@ -562,27 +434,6 @@
 					<textarea id="guessPnfData" readonly rows="4">{JSON.stringify(guessPnfData)}</textarea>
 				</div>
 			</div>
-		{/if}
-	</div>
-
-	<div class="training">
-		<h2>III) P&F Prediction (LLM-like)</h2>
-		<div class="training-controls">
-			<label for="pnfEpochs">Epochs:</label>
-			<input id="pnfEpochs" type="number" bind:value={pnfEpochs} disabled={isPnfTraining} />
-			<label for="pnfBatchSize">Batch Size:</label>
-			<input id="pnfBatchSize" type="number" bind:value={pnfBatchSize} disabled={isPnfTraining} />
-		</div>
-		<button onclick={resetPnfModel} disabled={isPnfTraining}>Reset</button>
-		<button onclick={trainPnfModel} disabled={isPnfTraining}>Train P&F Model</button>
-		<button onclick={stopPnfTraining} disabled={!isPnfTraining}>Stop</button>
-		<p>Status: {pnfTrainingStatus}</p>
-		{#if isPnfTraining}
-			<progress value={pnfTrainingProgress} max={pnfEpochs}></progress>
-		{/if}
-		<button onclick={predictNextPnfBar} disabled={isPnfTraining}>Guess Next P&F Bar</button>
-		{#if pnfPredictionResult}
-			<p>{pnfPredictionResult}</p>
 		{/if}
 	</div>
 </div>
