@@ -8,7 +8,6 @@
 	/** @type {Error | null} */
 	let error = $state(null);
 	let initialized = $state(false);
-	let seed = $state(Math.floor(Math.random() * 1000000));
 
 	const distributionTypes = ['uniform', 'normal', 'skewed', 'bimodal', 'fractal'];
 
@@ -43,10 +42,6 @@
 		plots[index].params = { ...defaultParams[/** @type {keyof typeof defaultParams} */ (newType)] };
 		plots[index].rawData = [];
 		plots[index].pnfData = [];
-	}
-
-	function randomizeSeed() {
-		seed = Math.floor(Math.random() * 1000000);
 	}
 
 	onMount(async () => {
@@ -106,11 +101,6 @@
 {:else if !initialized}
 	<p>Initializing WASM module...</p>
 {:else}
-	<div class="global-controls">
-		<label for="seed">Seed:</label>
-		<input type="number" id="seed" bind:value={seed} />
-		<button onclick={randomizeSeed}>Random</button>
-	</div>
 	<main>
 		{#each plots as plot, i (plot.id)}
 			<div class="plot-selector">
@@ -125,7 +115,6 @@
 				<InteractivePlot
 					type={plot.type}
 					initialParams={plot.params}
-					{seed}
 					bind:rawData={plot.rawData}
 					bind:pnfData={plot.pnfData}
 				/>
