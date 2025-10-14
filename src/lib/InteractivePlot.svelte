@@ -18,14 +18,16 @@
 	 * @type {{
 	 *   type: string;
 	 *   initialParams: any;
-	 *   seed: number;
 	 *   rawData: number[] | Float64Array;
 	 *   pnfData: { from: number; to: number; direction: 'Up' | 'Down' }[];
 	 * }}
 	 */
-	let { type, initialParams, seed, rawData = $bindable(), pnfData = $bindable() } = $props();
+	let { type, initialParams, rawData = $bindable(), pnfData = $bindable() } = $props();
 
 	let params = $state({ ...initialParams, boxSize: 1.0 });
+	let seed = $state(Math.floor(Math.random() * 1000000));
+	let generationTrigger = $state(0);
+
 	/** @type {any} */
 	let plotData = $state(null);
 	/** @type {[number, number][]} */
@@ -35,8 +37,10 @@
 	const n_samples = 300;
     const plotHeight = 300; // Standard height for all plots
 
-	// This effect will re-run whenever params change, generating new rawData
+	// This effect will re-run whenever the trigger changes, generating new rawData
 	$effect(() => {
+		generationTrigger; // Depend on the trigger
+
 		try {
 			switch (type) {
 				case 'uniform':
@@ -90,6 +94,23 @@
 			plotTSData = [];
 			pnfData = [];
 		}
+	});
+
+	function randomizeSeed() {
+		seed = Math.floor(Math.random() * 1000000);
+	}
+
+	function generateData() {
+		generationTrigger++;
+	}
+
+	function resetParams() {
+		params = { ...initialParams, boxSize: 1.0 };
+		generateData();
+	}
+
+	onMount(() => {
+		generateData();
 	});
 
 </script>
@@ -222,6 +243,17 @@
                 <input type="number" step="0.1" bind:value={params.boxSize}>
             </div>
         </div>
+        <div class="controls">
+			<div class="control-row">
+				<label for="seed">Seed</label>
+				<input type="number" bind:value={seed} />
+			</div>
+			<div class="control-row">
+				<button onclick={randomizeSeed}>Random</button>
+				<button onclick={resetParams}>Reset</button>
+				<button onclick={generateData}>Generate</button>
+			</div>
+		</div>
     </div>
 
     <div class="panel plot-panel">
