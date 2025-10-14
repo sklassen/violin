@@ -1,8 +1,8 @@
 <script>
     import * as d3 from 'd3';
 
-	/** @type {{ data: { from: number; to: number; direction: 'Up' | 'Down' }[]; boxSize: number; width?: number; height?: number }} */
-    let { data, boxSize, width = 320, height = 200 } = $props();
+	/** @type {{ data: { from: number; to: number; direction: 'Up' | 'Down' }[]; boxSize: number; width?: number; height?: number; predictedNextBar?: { from: number; to: number; direction: 'Up' | 'Down' } | null }} */
+    let { data, boxSize = 1.0, width = 320, height = 200, predictedNextBar = null } = $props();
 
 	/** @type {HTMLElement} */
     let container;
@@ -104,6 +104,49 @@
                 .attr("text-anchor", "middle")
                 .style("font-size", "12px")
                 .text("Point & Figure Chart");
+
+            // Draw the predicted next bar
+            if (predictedNextBar) {
+                const col = predictedNextBar;
+                const i = data.length; // Place it in the next column
+                 const start = Math.min(col.from, col.to);
+                const end = Math.max(col.from, col.to);
+                const numBoxes = Math.floor(Math.abs(end - start) / boxSize);
+
+                for (let j = 0; j <= numBoxes; j++) {
+                    const yLevel = col.direction === 'Up'
+                        ? start + j * boxSize
+                        : end - j * boxSize;
+
+                    const cx = x(i) + columnWidth / 2;
+                    const cy = y(yLevel);
+
+                    if (col.direction === 'Up') {
+                        svg.append("line")
+                           .attr("x1", cx - symbolRadius)
+                           .attr("y1", cy - symbolRadius)
+                           .attr("x2", cx + symbolRadius)
+                           .attr("y2", cy + symbolRadius)
+                           .attr("stroke", "lightgreen")
+                           .attr("stroke-width", 1.5);
+                        svg.append("line")
+                           .attr("x1", cx - symbolRadius)
+                           .attr("y1", cy + symbolRadius)
+                           .attr("x2", cx + symbolRadius)
+                           .attr("y2", cy - symbolRadius)
+                           .attr("stroke", "lightgreen")
+                           .attr("stroke-width", 1.5);
+                    } else {
+                        svg.append("circle")
+                           .attr("cx", cx)
+                           .attr("cy", cy)
+                           .attr("r", symbolRadius)
+                           .attr("stroke", "lightcoral")
+                           .attr("stroke-width", 1.5)
+                           .attr("fill", "none");
+                    }
+                }
+            }
         }
     });
 </script>

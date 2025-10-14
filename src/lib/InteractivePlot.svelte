@@ -33,7 +33,7 @@
     let title = type.charAt(0).toUpperCase() + type.slice(1) + " Distribution";
 
 	const n_samples = 300;
-    const plotHeight = 200; // Standard height for all plots
+    const plotHeight = 300; // Standard height for all plots
 
 	// This effect will re-run whenever params change, generating new rawData
 	$effect(() => {

@@ -1,5 +1,10 @@
 <script>
 	import * as tf from '@tensorflow/tfjs';
+	import InteractivePlot from '$lib/InteractivePlot.svelte';
+	import PointAndFigureChart from '$lib/PointAndFigureChart.svelte';
+	import ViolinPlot from '$lib/ViolinPlot.svelte';
+	import TimeSeriesPlot from '$lib/TimeSeriesPlot.svelte';
+	import { calculate_violin_data, calculate_pnf_data } from '$lib/vio-pkg/vio.js';
 
 	/**
 	 * @typedef {{
@@ -77,6 +82,15 @@
 	let selectedPlotForCopy = $state(0);
 	let decimalPlaces = $state(2);
 	let roundingStrategy = $state('round');
+
+	/** @type {any} */
+	let guessViolinData = $state(null);
+	/** @type {{ from: number; to: number; direction: 'Up' | 'Down' }[]} */
+	let guessPnfData = $state([]);
+	/** @type {[number, number][]} */
+	let guessTimeSeriesData = $state([]);
+	/** @type {{ from: number; to: number; direction: 'Up' | 'Down' } | null} */
+	let predictedPnfBar = $state(null);
 
 	function copyDataForGuessing() {
 		const plot = plots[selectedPlotForCopy];
@@ -241,10 +255,58 @@
 		const inputTensor = tf.tensor(sequence).reshape([1, TIME_STEP, 1]);
 		const [pred_clf, pred_reg] = /** @type {tf.Tensor[]} */ (model.predict(inputTensor));
 
+		const confidence = pred_clf.max().dataSync()[0];
 		const predictedIndex = pred_clf.argMax(-1).dataSync()[0];
 		const nextValue = pred_reg.dataSync()[0];
 
-		predictionResult = `Predicted Distribution: ${plots[predictedIndex].type}, Next Value: ${nextValue.toFixed(4)}`;
+		predictionResult = `Predicted Distribution: ${
+			plots[predictedIndex].type
+		} (Confidence: ${(confidence * 100).toFixed(2)}%), Next Value: ${nextValue.toFixed(4)}`;
+
+		// --- Generate data for post-guess visualizations ---
+		// Violin data
+		if (inputData.length >= 4) {
+			guessViolinData = calculate_violin_data(new Float64Array(inputData));
+		} else {
+			guessViolinData = null;
+		}
+
+		// Time series and P&F data
+		const cumulative_sum_values = [];
+		/** @type {[number, number][]} */
+		const cumulative_sum_pairs = [];
+		let current_sum = 0.0;
+		for (let i = 0; i < inputData.length; i++) {
+			current_sum += inputData[i];
+			cumulative_sum_pairs.push([i, current_sum]);
+			cumulative_sum_values.push(current_sum);
+		}
+		guessTimeSeriesData = cumulative_sum_pairs;
+		guessPnfData = calculate_pnf_data(new Float64Array(cumulative_sum_values), 1.0, 3);
+
+		// --- Calculate the predicted P&F bar ---
+		if (guessPnfData.length > 0) {
+			const lastPnfColumn = guessPnfData[guessPnfData.length - 1];
+			const lastPrice = cumulative_sum_values[cumulative_sum_values.length - 1];
+			const nextPrice = lastPrice + nextValue;
+
+			let nextDirection = lastPnfColumn.direction;
+			let from = lastPnfColumn.from;
+			if (nextDirection === 'Up') {
+				if (nextPrice < lastPrice) { // Reversal
+					nextDirection = 'Down';
+					from = lastPrice;
+				}
+			} else { // Down
+				if (nextPrice > lastPrice) { // Reversal
+					nextDirection = 'Up';
+					from = lastPrice;
+				}
+			}
+			predictedPnfBar = { from: from, to: nextPrice, direction: nextDirection };
+		} else {
+			predictedPnfBar = null;
+		}
 	}
 
 	const PNF_TIME_STEP = 5;
@@ -404,6 +466,26 @@
 		border-radius: 4px;
 		margin-bottom: 10px;
 	}
+	.post-guess-visuals {
+		margin-top: 20px;
+		border-top: 1px solid #eee;
+		padding-top: 20px;
+	}
+	.charts-container {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 20px;
+		justify-content: center;
+	}
+	.chart-wrapper {
+		border: 1px solid #ddd;
+		border-radius: 8px;
+		padding: 10px;
+	}
+    .data-panel {
+        width: 100%;
+        padding: 10px;
+    }
 </style>
 
 <div class="ml-container">
@@ -459,6 +541,27 @@
 		<button onclick={makePrediction}>Guess</button>
 		{#if predictionResult}
 			<p>{predictionResult}</p>
+		{/if}
+
+		{#if guessViolinData}
+			<div class="post-guess-visuals">
+				<h3>Visualizations for Your Input</h3>
+				<div class="charts-container">
+					<div class="chart-wrapper">
+						<ViolinPlot data={guessViolinData} title="Input Data Distribution" width={320} height={300} />
+					</div>
+					<div class="chart-wrapper">
+						<TimeSeriesPlot data={guessTimeSeriesData} width={320} height={300} />
+					</div>
+					<div class="chart-wrapper">
+						<PointAndFigureChart data={guessPnfData} boxSize={1.0} width={320} height={300} predictedNextBar={predictedPnfBar} />
+					</div>
+				</div>
+				<div class="data-panel">
+					<label for="guessPnfData">Point & Figure Data:</label>
+					<textarea id="guessPnfData" readonly rows="4">{JSON.stringify(guessPnfData)}</textarea>
+				</div>
+			</div>
 		{/if}
 	</div>
 
