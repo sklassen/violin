@@ -1,8 +1,10 @@
 <script>
     import * as d3 from 'd3';
 
+	/** @type {{ data: [number, number][]; width?: number; height?: number }} */
     let { data, width = 320, height = 150 } = $props();
 
+	/** @type {HTMLElement} */
     let container;
 
     $effect(() => {
@@ -23,7 +25,7 @@
 
             // X scale
             const x = d3.scaleLinear()
-                .domain(d3.extent(data, d => d[0]))
+                .domain(d3.extent(data, (/** @type {[number, number]} */ d) => d[0]))
                 .range([0, innerWidth]);
             svg.append("g")
                 .attr("transform", `translate(0, ${innerHeight})`)
@@ -31,14 +33,14 @@
 
             // Y scale
             const y = d3.scaleLinear()
-                .domain(d3.extent(data, d => d[1]))
+                .domain(d3.extent(data, (/** @type {[number, number]} */ d) => d[1]))
                 .range([innerHeight, 0]);
             svg.append("g").call(d3.axisLeft(y).ticks(5));
 
             // Line generator
             const line = d3.line()
-                .x(d => x(d[0]))
-                .y(d => y(d[1]));
+                .x((/** @type {[number, number]} */ d) => x(d[0]))
+                .y((/** @type {[number, number]} */ d) => y(d[1]));
 
             // Draw the line
             svg.append("path")

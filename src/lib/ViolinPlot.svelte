@@ -1,7 +1,9 @@
 <script>
     import * as d3 from 'd3';
 
+	/** @type {{ data: any; width?: number; height?: number; title?: string }} */
     let { data, width = 200, height = 400, title = "Violin Plot" } = $props();
+	/** @type {HTMLElement} */
     let container;
 
     $effect(() => {
@@ -27,16 +29,16 @@
             svg.append("g").call(d3.axisLeft(y));
 
             // X scale for the violin plot width
-            const xMax = d3.max(data.kde_points, d => d[1]);
+            const xMax = d3.max(data.kde_points, (/** @type {[number, number]} */ d) => d[1]);
             const x = d3.scaleLinear()
                 .domain([-xMax, xMax])
                 .range([0, innerWidth]);
 
             // Area generator for the violin shape
             const area = d3.area()
-                .x0(d => x(-d[1]))
-                .x1(d => x(d[1]))
-                .y(d => y(d[0]))
+                .x0((/** @type {[number, number]} */ d) => x(-d[1]))
+                .x1((/** @type {[number, number]} */ d) => x(d[1]))
+                .y((/** @type {[number, number]} */ d) => y(d[0]))
                 .curve(d3.curveCatmullRom);
 
             // Draw the violin area
