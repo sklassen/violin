@@ -2,7 +2,8 @@
 	import { onMount } from 'svelte';
 	import init from '$lib/vio-pkg/vio.js';
 	import InteractivePlot from '$lib/InteractivePlot.svelte';
-	import TrainingAndGuessing from '$lib/TrainingAndGuessing.svelte';
+	import TimeSeriesModel from '$lib/TimeSeriesModel.svelte';
+	import PointAndFigureModel from '$lib/PointAndFigureModel.svelte';
 
 	/** @type {Error | null} */
 	let error = $state(null);
@@ -131,5 +132,6 @@
 			</div>
 		{/each}
 	</main>
-	<TrainingAndGuessing {plots} />
+	<TimeSeriesModel {plots} />
+	<PointAndFigureModel {plots} />
 {/if}
