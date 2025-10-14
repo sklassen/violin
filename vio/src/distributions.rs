@@ -51,6 +51,7 @@ pub fn generate_skewed_data(mean: f64, std_dev: f64, skew: f64, ar_coeff: f64, n
 }
 
 #[wasm_bindgen]
+#[allow(clippy::too_many_arguments)]
 pub fn generate_bimodal_data(
     mean1: f64, std_dev1: f64,
     mean2: f64, std_dev2: f64,
@@ -103,9 +104,9 @@ pub fn generate_fractal_data(hurst: f64, n_samples: usize, seed: u32) -> Vec<f64
 
     // Step 1: Calculate the autocovariance function (ACF) of fGn
     let mut acf = vec![0.0; n + 1];
-    for i in 0..=n {
+    for (i, acf_val) in acf.iter_mut().enumerate() {
         let k = i as f64;
-        acf[i] = 0.5 * ((k + 1.0).powf(2.0 * hurst) - 2.0 * k.powf(2.0 * hurst) + (k - 1.0).abs().powf(2.0 * hurst));
+        *acf_val = 0.5 * ((k + 1.0).powf(2.0 * hurst) - 2.0 * k.powf(2.0 * hurst) + (k - 1.0).abs().powf(2.0 * hurst));
     }
 
     // Step 2: Create the first row of the circulant covariance matrix

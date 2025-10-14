@@ -3,8 +3,9 @@
 > vite dev
 
 Port 5173 is in use, trying another one...
+Port 5174 is in use, trying another one...
 
-  VITE v5.4.18  ready in 1351 ms
+  VITE v5.4.18  ready in 1344 ms
 
-  ➜  Local:   http://localhost:5174/violin
+  ➜  Local:   http://localhost:5175/violin
   ➜  Network: use --host to expose
