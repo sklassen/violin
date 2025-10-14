@@ -2,14 +2,9 @@
 > violin@0.0.1 dev
 > vite dev
 
-The following Vite config options will be overridden by SvelteKit:
-  - base
-Port 5173 is in use, trying another one...
-Port 5174 is in use, trying another one...
-Port 5175 is in use, trying another one...
-Port 5176 is in use, trying another one...
+Forced re-optimization of dependencies
 
-  VITE v5.4.18  ready in 1582 ms
+  VITE v5.4.18  ready in 1372 ms
 
-  ➜  Local:   http://localhost:5177/violin
+  ➜  Local:   http://localhost:5173/violin
   ➜  Network: use --host to expose

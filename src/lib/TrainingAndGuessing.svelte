@@ -25,11 +25,53 @@
 	/** @type {{ loss: number; acc: number; mae: number } | null} */
 	let finalTrainingStats = $state(null);
 
+	let isTraining = $state(false);
+	let stopTrainingFlag = false;
+
+	function resetModel() {
+		if (model) {
+			tf.dispose(model);
+		}
+		model = null;
+		trainingStatus = 'Not started';
+		predictionResult = null;
+		trainingProgress = 0;
+		finalTrainingStats = null;
+		isTraining = false;
+		stopTrainingFlag = false;
+	}
+
+	function stopTraining() {
+		stopTrainingFlag = true;
+	}
+
 	/** @type {tf.LayersModel | null} */
 	let pnfModel = $state(null);
 	let pnfTrainingStatus = $state('Not started');
 	/** @type {string | null} */
 	let pnfPredictionResult = $state(null);
+
+	let pnfEpochs = $state(100);
+	let pnfBatchSize = $state(16);
+	let pnfTrainingProgress = $state(0);
+	let isPnfTraining = $state(false);
+	let stopPnfTrainingFlag = false;
+
+	function resetPnfModel() {
+		if (pnfModel) {
+			tf.dispose(pnfModel);
+		}
+		pnfModel = null;
+		pnfTrainingStatus = 'Not started';
+		pnfPredictionResult = null;
+		pnfTrainingProgress = 0;
+		isPnfTraining = false;
+		stopPnfTrainingFlag = false;
+	}
+
+	function stopPnfTraining() {
+		stopPnfTrainingFlag = true;
+	}
 
 	const N_SAMPLES = 300;
 	const TIME_STEP = 20;
@@ -50,8 +92,10 @@
 	}
 
 	function trainModel() {
-		trainingStatus = 'Training model...';
-		trainingProgress = 1;
+		isTraining = true;
+		stopTrainingFlag = false;
+		trainingStatus = 'Training...';
+		trainingProgress = 0;
 		finalTrainingStats = null;
 
 		setTimeout(async () => {
@@ -75,7 +119,7 @@
 
 				if (allX.length === 0) {
 					trainingStatus = 'Error: No data to train on.';
-					trainingProgress = 0;
+					isTraining = false;
 					return;
 				}
 
@@ -88,7 +132,6 @@
 				const lstm = /** @type {tf.SymbolicTensor} */ (
 					tf.layers.lstm({ units: 32, returnSequences: false }).apply(input)
 				);
-
 				const clf_output = tf.layers
 					.dense({ units: plots.length, activation: 'softmax', name: 'clf_output' })
 					.apply(lstm);
@@ -113,27 +156,35 @@
 					batchSize: batchSize,
 					callbacks: {
 						onEpochEnd: (epoch, logs) => {
+							if (stopTrainingFlag) {
+								newModel.stopTraining = true;
+							}
 							if (logs) {
-								trainingStatus = `Epoch ${epoch + 1}/${epochs}: loss = ${logs.loss.toFixed(
+								trainingStatus = `Epoch ${epoch}/${epochs - 1}: loss = ${logs.loss.toFixed(
 									4
 								)}, acc = ${(logs.clf_output_acc || 0).toFixed(4)}`;
-								trainingProgress = epoch + 2;
+								trainingProgress = epoch + 1;
 							}
 						}
 					}
 				});
 
-				model = newModel;
-				trainingStatus = 'Training complete!';
-				const lastEpochIndex = history.epoch.length - 1;
-				finalTrainingStats = {
-					loss: /** @type {number} */ (history.history.loss[lastEpochIndex]),
-					acc: /** @type {number} */ (history.history.clf_output_acc[lastEpochIndex]),
-					mae: /** @type {number} */ (history.history.reg_output_mae[lastEpochIndex])
-				};
+				if (stopTrainingFlag) {
+					trainingStatus = 'Training stopped by user.';
+				} else {
+					model = newModel;
+					trainingStatus = 'Training complete!';
+					const lastEpochIndex = history.epoch.length - 1;
+					finalTrainingStats = {
+						loss: /** @type {number} */ (history.history.loss[lastEpochIndex]),
+						acc: /** @type {number} */ (history.history.clf_output_acc[lastEpochIndex]),
+						mae: /** @type {number} */ (history.history.reg_output_mae[lastEpochIndex])
+					};
+				}
 			} catch (/** @type {any} */ e) {
-				trainingStatus = `Error: Training uncompleted. ${e.message}`;
-				trainingProgress = 0;
+				trainingStatus = `Error: ${e.message}`;
+			} finally {
+				isTraining = false;
 			}
 		}, 10);
 	}
@@ -174,8 +225,10 @@
 	}
 
 	async function trainPnfModel() {
+		isPnfTraining = true;
+		stopPnfTrainingFlag = false;
 		pnfTrainingStatus = 'Preparing P&F data...';
-		pnfModelTraining = true;
+		pnfTrainingProgress = 0;
 
 		setTimeout(async () => {
 			try {
@@ -197,7 +250,7 @@
 
 				if (sequences.length === 0) {
 					pnfTrainingStatus = 'Not enough data to train P&F model.';
-					pnfModelTraining = false;
+					isPnfTraining = false;
 					return;
 				}
 
@@ -222,25 +275,33 @@
 
 				pnfTrainingStatus = 'Training P&F model...';
 				await newPnfModel.fit(tensorX, tensorY, {
-					epochs: 100,
-					batchSize: 16,
+					epochs: pnfEpochs,
+					batchSize: pnfBatchSize,
 					callbacks: {
 						onEpochEnd: (epoch, logs) => {
+							if (stopPnfTrainingFlag) {
+								newPnfModel.stopTraining = true;
+							}
 							if (logs) {
-								pnfTrainingStatus = `Epoch ${epoch + 1}: loss = ${logs.loss.toFixed(4)}, acc = ${
-									logs.acc
-								}`;
+								pnfTrainingStatus = `Epoch ${epoch}/${pnfEpochs - 1}: loss = ${logs.loss.toFixed(
+									4
+								)}, acc = ${logs.acc}`;
+								pnfTrainingProgress = epoch + 1;
 							}
 						}
 					}
 				});
 
-				pnfModel = newPnfModel;
-				pnfTrainingStatus = 'P&F Model training complete!';
+				if (stopPnfTrainingFlag) {
+					pnfTrainingStatus = 'P&F Model training stopped by user.';
+				} else {
+					pnfModel = newPnfModel;
+					pnfTrainingStatus = 'P&F Model training complete!';
+				}
 			} catch (/** @type {any} */ e) {
 				pnfTrainingStatus = `Error: ${e.message}`;
 			} finally {
-				pnfModelTraining = false;
+				isPnfTraining = false;
 			}
 		}, 10);
 	}
@@ -306,16 +367,18 @@
 		<h2>I) Training</h2>
 		<div class="training-controls">
 			<label for="epochs">Epochs:</label>
-			<input id="epochs" type="number" bind:value={epochs} />
+			<input id="epochs" type="number" bind:value={epochs} disabled={isTraining} />
 			<label for="batchSize">Batch Size:</label>
-			<input id="batchSize" type="number" bind:value={batchSize} />
+			<input id="batchSize" type="number" bind:value={batchSize} disabled={isTraining} />
 		</div>
-		<button onclick={trainModel}>Train Model</button>
+		<button onclick={resetModel} disabled={isTraining}>Reset</button>
+		<button onclick={trainModel} disabled={isTraining}>Train</button>
+		<button onclick={stopTraining} disabled={!isTraining}>Stop</button>
 		<p>Status: {trainingStatus}</p>
-		{#if trainingProgress > 0 && trainingProgress <= epochs}
+		{#if isTraining}
 			<progress value={trainingProgress} max={epochs}></progress>
 		{/if}
-		{#if finalTrainingStats}
+		{#if finalTrainingStats && !isTraining}
 			<div class="stats">
 				<h3>Final Training Stats</h3>
 				<p>Loss: {finalTrainingStats.loss.toFixed(4)}</p>
@@ -341,9 +404,20 @@
 
 	<div class="training">
 		<h2>III) P&F Prediction (LLM-like)</h2>
-		<button onclick={trainPnfModel}>Train P&F Model</button>
+		<div class="training-controls">
+			<label for="pnfEpochs">Epochs:</label>
+			<input id="pnfEpochs" type="number" bind:value={pnfEpochs} disabled={isPnfTraining} />
+			<label for="pnfBatchSize">Batch Size:</label>
+			<input id="pnfBatchSize" type="number" bind:value={pnfBatchSize} disabled={isPnfTraining} />
+		</div>
+		<button onclick={resetPnfModel} disabled={isPnfTraining}>Reset</button>
+		<button onclick={trainPnfModel} disabled={isPnfTraining}>Train P&F Model</button>
+		<button onclick={stopPnfTraining} disabled={!isPnfTraining}>Stop</button>
 		<p>Status: {pnfTrainingStatus}</p>
-		<button onclick={predictNextPnfBar}>Guess Next P&F Bar</button>
+		{#if isPnfTraining}
+			<progress value={pnfTrainingProgress} max={pnfEpochs}></progress>
+		{/if}
+		<button onclick={predictNextPnfBar} disabled={isPnfTraining}>Guess Next P&F Bar</button>
 		{#if pnfPredictionResult}
 			<p>{pnfPredictionResult}</p>
 		{/if}
