@@ -73,6 +73,38 @@
 		stopPnfTrainingFlag = true;
 	}
 
+	let guessingData = $state('');
+	let selectedPlotForCopy = $state(0);
+	let decimalPlaces = $state(2);
+	let roundingStrategy = $state('round');
+
+	function copyDataForGuessing() {
+		const plot = plots[selectedPlotForCopy];
+		if (!plot || !plot.rawData || plot.rawData.length === 0) {
+			guessingData = 'No data to copy.';
+			return;
+		}
+
+		const multiplier = Math.pow(10, decimalPlaces);
+		/** @type {(num: number) => number} */
+		let roundingFunction;
+		switch (roundingStrategy) {
+			case 'floor':
+				roundingFunction = (num) => Math.floor(num * multiplier) / multiplier;
+				break;
+			case 'ceil':
+				roundingFunction = (num) => Math.ceil(num * multiplier) / multiplier;
+				break;
+			case 'round':
+			default:
+				roundingFunction = (num) => Math.round(num * multiplier) / multiplier;
+				break;
+		}
+
+		const formattedData = plot.rawData.map(roundingFunction);
+		guessingData = formattedData.join(', ');
+	}
+
 	const N_SAMPLES = 300;
 	const TIME_STEP = 20;
 
@@ -195,13 +227,17 @@
 			return;
 		}
 
-		const plot = plots[selectedPlotIndex];
-		if (plot.rawData.length < TIME_STEP) {
-			predictionResult = 'Not enough data for prediction.';
+		const inputData = guessingData
+			.split(/[,\\n]/)
+			.map(s => parseFloat(s.trim()))
+			.filter(n => !isNaN(n));
+
+		if (inputData.length < TIME_STEP) {
+			predictionResult = `Not enough data for prediction. Need at least ${TIME_STEP} numbers.`;
 			return;
 		}
 
-		const sequence = Array.from(plot.rawData.slice(plot.rawData.length - TIME_STEP));
+		const sequence = inputData.slice(inputData.length - TIME_STEP);
 		const inputTensor = tf.tensor(sequence).reshape([1, TIME_STEP, 1]);
 		const [pred_clf, pred_reg] = /** @type {tf.Tensor[]} */ (model.predict(inputTensor));
 
@@ -360,6 +396,14 @@
 		padding: 10px;
 		border-radius: 4px;
 	}
+	textarea {
+		width: 100%;
+		padding: 8px;
+		box-sizing: border-box;
+		border: 1px solid #ccc;
+		border-radius: 4px;
+		margin-bottom: 10px;
+	}
 </style>
 
 <div class="ml-container">
@@ -390,12 +434,28 @@
 
 	<div class="guessing">
 		<h2>II) Guessing</h2>
-		<label for="plot-select">Select a time series to guess:</label>
-		<select id="plot-select" bind:value={selectedPlotIndex}>
-			{#each plots as plot, i}
-				<option value={i}>Plot {i + 1} ({plot.type})</option>
-			{/each}
-		</select>
+		<div class="training-controls">
+			<label for="plot-copy-select">Copy from:</label>
+			<select id="plot-copy-select" bind:value={selectedPlotForCopy}>
+				{#each plots as plot, i}
+					<option value={i}>Plot {i + 1} ({plot.type})</option>
+				{/each}
+			</select>
+			<label for="decimal-places">Decimals:</label>
+			<input id="decimal-places" type="number" min="0" bind:value={decimalPlaces} style="width: 60px;" />
+			<label for="rounding-strategy">Rounding:</label>
+			<select id="rounding-strategy" bind:value={roundingStrategy}>
+				<option value="round">Round</option>
+				<option value="floor">Floor</option>
+				<option value="ceil">Ceil</option>
+			</select>
+			<button onclick={copyDataForGuessing}>Copy Data</button>
+		</div>
+		<textarea
+			bind:value={guessingData}
+			rows="5"
+			placeholder="Enter time series data here, separated by commas or newlines..."
+		></textarea>
 		<button onclick={makePrediction}>Guess</button>
 		{#if predictionResult}
 			<p>{predictionResult}</p>
