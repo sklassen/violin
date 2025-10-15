@@ -270,7 +270,7 @@
     </div>
     <div class="panel plot-panel">
         {#if pnfData.length > 0}
-            <PointAndFigureChart data={pnfData} boxSize={params.boxSize} width={320} height={plotHeight} />
+            <PointAndFigureChart data={pnfData} boxSize={params.boxSize} width={320} height={300} />
         {/if}
     </div>
     <div class="panel data-panel">
