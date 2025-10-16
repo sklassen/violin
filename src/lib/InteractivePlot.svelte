@@ -91,14 +91,20 @@
 
 			// Calculate P&F data
 			pnfData = calculate_pnf_data(new Float64Array(cumulative_sum_values), params.boxSize, 3);
-			if (pnfData) {
-				returnPnfData = calculate_return_pnf(pnfData, params.boxSize, 3, 2.0);
-			}
 
 		} else {
 			plotData = null;
 			plotTSData = [];
 			pnfData = [];
+		}
+	});
+
+	// This effect calculates the return P&F data whenever the primary P&F data changes
+	$effect(() => {
+		if (pnfData && pnfData.length > 0) {
+			returnPnfData = calculate_return_pnf(pnfData, params.boxSize, 3, 2.0);
+		} else {
+			returnPnfData = [];
 		}
 	});
 
