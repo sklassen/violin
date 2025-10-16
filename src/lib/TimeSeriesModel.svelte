@@ -240,9 +240,9 @@
 		const predictedIndex = pred_clf.argMax(-1).dataSync()[0];
 		const nextValue = pred_reg.dataSync()[0];
 
-		predictionResult = `Predicted Distribution: ${
+		predictionResult = `Predicted Distribution: Plot ${predictedIndex + 1} (${
 			plots[predictedIndex].type
-		} (Confidence: ${(confidence * 100).toFixed(2)}%), Next Value: ${nextValue.toFixed(4)}`;
+		}) (Confidence: ${(confidence * 100).toFixed(2)}%), Next Value: ${nextValue.toFixed(4)}`;
 
 		// --- Generate data for post-guess visualizations ---
 		// Violin data
