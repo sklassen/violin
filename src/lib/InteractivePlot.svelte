@@ -6,6 +6,7 @@
 	import {
 		calculate_violin_data,
 		calculate_pnf_data,
+		calculate_return_pnf,
 		generate_uniform_data,
 		generate_normal_data,
 		generate_skewed_data,
@@ -32,6 +33,8 @@
 	let plotData = $state(null);
 	/** @type {[number, number][]} */
 	let plotTSData = $state([]);
+	/** @type {{ from: number; to: number; direction: 'Up' | 'Down' }[]} */
+	let returnPnfData = $state([]);
     let title = type.charAt(0).toUpperCase() + type.slice(1) + " Distribution";
 
 	const n_samples = 300;
@@ -88,6 +91,9 @@
 
 			// Calculate P&F data
 			pnfData = calculate_pnf_data(new Float64Array(cumulative_sum_values), params.boxSize, 3);
+			if (pnfData) {
+				returnPnfData = calculate_return_pnf(pnfData, params.boxSize, 3, 2.0);
+			}
 
 		} else {
 			plotData = null;
@@ -271,6 +277,11 @@
     <div class="panel plot-panel">
         {#if pnfData.length > 0}
             <PointAndFigureChart data={pnfData} boxSize={params.boxSize} width={320} height={300} />
+        {/if}
+    </div>
+    <div class="panel plot-panel">
+        {#if returnPnfData.length > 0}
+            <PointAndFigureChart data={returnPnfData} boxSize={params.boxSize} width={320} height={300} title="Total Return P&F" />
         {/if}
     </div>
     <div class="panel data-panel">

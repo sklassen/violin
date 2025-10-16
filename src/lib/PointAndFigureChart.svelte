@@ -1,8 +1,8 @@
 <script>
     import * as d3 from 'd3';
 
-	/** @type {{ data: { from: number; to: number; direction: 'Up' | 'Down' }[]; boxSize: number; width?: number; height?: number; predictedNextBar?: { from: number; to: number; direction: 'Up' | 'Down' } | null }} */
-    let { data, boxSize = 1.0, width = 320, height = 200, predictedNextBar = null } = $props();
+	/** @type {{ data: { from: number; to: number; direction: 'Up' | 'Down' }[]; boxSize: number; width?: number; height?: number; predictedNextBar?: { from: number; to: number; direction: 'Up' | 'Down' } | null; title?: string }} */
+    let { data, boxSize = 1.0, width = 320, height = 200, predictedNextBar = null, title = "Point & Figure Chart" } = $props();
 
 	/** @type {HTMLElement} */
     let container;
@@ -103,7 +103,7 @@
                 .attr("y", -5)
                 .attr("text-anchor", "middle")
                 .style("font-size", "12px")
-                .text("Point & Figure Chart");
+                .text(title);
 
             // Draw the predicted next bar
             if (predictedNextBar) {

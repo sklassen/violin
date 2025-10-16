@@ -1,13 +1,13 @@
 use wasm_bindgen::prelude::*;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Clone, Copy, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Debug)]
 pub enum PnfDirection {
     Up,
     Down,
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct PnfColumn {
     pub direction: PnfDirection,
     pub from: f64,
@@ -77,4 +77,31 @@ pub fn calculate_pnf_data(
     }
 
     Ok(serde_wasm_bindgen::to_value(&columns).unwrap())
+}
+
+#[wasm_bindgen]
+pub fn calculate_return_pnf(
+    pnf_data: JsValue,
+    box_size: f64,
+    reversal_amount: f64,
+    transaction_cost: Option<f64>,
+) -> Result<JsValue, JsValue> {
+    let input_columns: Vec<PnfColumn> = serde_wasm_bindgen::from_value(pnf_data)
+        .map_err(|e| JsValue::from_str(&format!("Deserialization error: {}", e)))?;
+
+    let cost = transaction_cost.unwrap_or(2.0);
+    let mut cumulative_return = 0.0;
+    let mut return_series = vec![cumulative_return];
+
+    for col in input_columns {
+        let num_boxes = ((col.to - col.from).abs() / box_size).floor();
+        let bar_return = num_boxes - reversal_amount - cost;
+        cumulative_return += bar_return;
+        return_series.push(cumulative_return);
+    }
+
+    // Now, create a new P&F chart from the cumulative return series
+    let return_pnf_columns = calculate_pnf_data(return_series, box_size, reversal_amount as usize)?;
+
+    Ok(return_pnf_columns)
 }
