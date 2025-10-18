@@ -1,13 +1,13 @@
 use wasm_bindgen::prelude::*;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Clone, Copy, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Debug)]
 pub enum PnfDirection {
     Up,
     Down,
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct PnfColumn {
     pub direction: PnfDirection,
     pub from: f64,
@@ -77,4 +77,32 @@ pub fn calculate_pnf_data(
     }
 
     Ok(serde_wasm_bindgen::to_value(&columns).unwrap())
+}
+
+#[wasm_bindgen]
+pub fn calculate_return_pnf(
+    pnf_data: JsValue,
+    box_size: f64,
+    reversal_amount: f64, // Keep for the formula
+    transaction_cost: Option<f64>,
+) -> Result<JsValue, JsValue> {
+    let mut input_columns: Vec<PnfColumn> = serde_wasm_bindgen::from_value(pnf_data)
+        .map_err(|e| JsValue::from_str(&format!("Deserialization error: {}", e)))?;
+
+    let cost = transaction_cost.unwrap_or(2.0);
+    let mut cumulative_return = 0.0;
+
+    for col in &mut input_columns {
+        let num_boxes = ((col.to - col.from).abs() / box_size).floor();
+        let bar_return = num_boxes - reversal_amount - cost;
+
+        let previous_return = cumulative_return;
+        cumulative_return += bar_return;
+
+        col.from = previous_return;
+        col.to = cumulative_return;
+        col.direction = if bar_return >= 0.0 { PnfDirection::Up } else { PnfDirection::Down };
+    }
+
+    Ok(serde_wasm_bindgen::to_value(&input_columns).unwrap())
 }
