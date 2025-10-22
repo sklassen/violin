@@ -83,8 +83,9 @@ pub fn calculate_pnf_data(
 pub fn calculate_return_pnf(
     pnf_data: JsValue,
     box_size: f64,
-    reversal_amount: f64, // Keep for the formula
+    reversal_amount: f64,
     transaction_cost: Option<f64>,
+    mode: i64,
 ) -> Result<JsValue, JsValue> {
     let mut input_columns: Vec<PnfColumn> = serde_wasm_bindgen::from_value(pnf_data)
         .map_err(|e| JsValue::from_str(&format!("Deserialization error: {}", e)))?;
@@ -94,14 +95,31 @@ pub fn calculate_return_pnf(
 
     for col in &mut input_columns {
         let num_boxes = ((col.to - col.from).abs() / box_size).floor();
-        let bar_return = num_boxes - reversal_amount - cost;
+        let mut bar_return = num_boxes - reversal_amount - cost;
+
+        bar_return = match mode {
+            1 => {
+                if col.direction == PnfDirection::Up {
+                    bar_return
+                } else {
+                    0.0
+                }
+            }
+            -1 => {
+                if col.direction == PnfDirection::Down {
+                    bar_return
+                } else {
+                    0.0
+                }
+            }
+            _ => bar_return,
+        };
 
         let previous_return = cumulative_return;
         cumulative_return += bar_return;
 
         col.from = previous_return;
         col.to = cumulative_return;
-        col.direction = if bar_return >= 0.0 { PnfDirection::Up } else { PnfDirection::Down };
     }
 
     Ok(serde_wasm_bindgen::to_value(&input_columns).unwrap())
