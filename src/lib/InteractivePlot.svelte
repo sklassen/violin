@@ -35,7 +35,9 @@
 	let plotTSData = $state([]);
 	/** @type {{ from: number; to: number; direction: 'Up' | 'Down' }[]} */
 	let returnPnfData = $state([]);
-    let title = type.charAt(0).toUpperCase() + type.slice(1) + " Distribution";
+	let returnPnfUpData = $state([]);
+	let returnPnfDnData = $state([]);
+  let title = type.charAt(0).toUpperCase() + type.slice(1) + " Distribution";
 
 	const n_samples = 300;
     const plotHeight = 300; // Standard height for all plots
@@ -102,9 +104,13 @@
 	// This effect calculates the return P&F data whenever the primary P&F data changes
 	$effect(() => {
 		if (pnfData && pnfData.length > 0) {
-			returnPnfData = calculate_return_pnf(pnfData, params.boxSize, 3, 2.0);
+			returnPnfData = calculate_return_pnf(pnfData, params.boxSize, 3, 2.0, BigInt(0));
+			returnPnfUpData = calculate_return_pnf(pnfData, params.boxSize, 3, 2.0, BigInt(1));
+			returnPnfDnData = calculate_return_pnf(pnfData, params.boxSize, 3, 2.0, BigInt(-1));
 		} else {
 			returnPnfData = [];
+			returnPnfUpData = [];
+			returnPnfDnData = [];
 		}
 	});
 
@@ -140,6 +146,7 @@
     }
     .panel {
         width: 100%;
+        height: 300px;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -288,6 +295,16 @@
     <div class="panel plot-panel">
         {#if returnPnfData.length > 0}
             <PointAndFigureChart data={returnPnfData} boxSize={params.boxSize} width={320} height={300} title="Total Return P&F" />
+        {/if}
+    </div>
+    <div class="panel plot-panel">
+        {#if returnPnfUpData.length > 0}
+            <PointAndFigureChart data={returnPnfUpData} boxSize={params.boxSize} width={320} height={300} title="Total Return P&F Up" />
+        {/if}
+    </div>
+    <div class="panel plot-panel">
+        {#if returnPnfDnData.length > 0}
+            <PointAndFigureChart data={returnPnfDnData} boxSize={params.boxSize} width={320} height={300} title="Total Return P&F Down" />
         {/if}
     </div>
     <div class="panel data-panel">
