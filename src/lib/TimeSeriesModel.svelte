@@ -1,4 +1,5 @@
 <script>
+	import * as tf from '@tensorflow/tfjs';
 	import PointAndFigureChart from '$lib/PointAndFigureChart.svelte';
 	import ViolinPlot from '$lib/ViolinPlot.svelte';
 	import TimeSeriesPlot from '$lib/TimeSeriesPlot.svelte';
