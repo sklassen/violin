@@ -27,7 +27,7 @@
 	 */
 	let { type, initialParams, rawData = $bindable(), pnfData = $bindable(), nSamples } = $props();
 
-	let params = $state({ ...initialParams, boxSize: 1.0, reversal: 3 });
+	let params = $state({ ...initialParams, boxSize: 1.0, reversal: 3, transactionCost: 3 });
 	let seed = $state(Math.floor(Math.random() * 1000000));
 	let generationTrigger = $state(0);
 
@@ -107,9 +107,9 @@
 	// This effect calculates the return P&F data whenever the primary P&F data changes
 	$effect(() => {
 		if (pnfData && pnfData.length > 0) {
-			returnPnfData = calculate_return_pnf(pnfData, params.boxSize, 3, 2.0, BigInt(0));
-			returnPnfUpData = calculate_return_pnf(pnfData, params.boxSize, 3, 2.0, BigInt(1));
-			returnPnfDnData = calculate_return_pnf(pnfData, params.boxSize, 3, 2.0, BigInt(-1));
+			returnPnfData = calculate_return_pnf(pnfData, params.boxSize, params.reversal, params.transactionCost, BigInt(0));
+			returnPnfUpData = calculate_return_pnf(pnfData, params.boxSize, params.reversal, params.transactionCost, BigInt(1));
+			returnPnfDnData = calculate_return_pnf(pnfData, params.boxSize, params.reversal, params.transactionCost, BigInt(-1));
 		} else {
 			returnPnfData = [];
 			returnPnfUpData = [];
@@ -138,7 +138,7 @@
 			current_sum += rawData[i];
 			cumulative_sum_values.push(current_sum);
 		}
-		const bestBoxSize = optimize_box_size(new Float64Array(cumulative_sum_values), params.reversal, BigInt(optimizationDirection));
+		const bestBoxSize = optimize_box_size(new Float64Array(cumulative_sum_values), params.reversal, params.transactionCost, BigInt(optimizationDirection));
 		params.boxSize = bestBoxSize;
 	}
 
@@ -279,6 +279,10 @@
             <div class="control-row">
                 <label for="reversal">P&F Reversal</label>
                 <input type="number" step="1" bind:value={params.reversal}>
+            </div>
+            <div class="control-row">
+                <label for="transactionCost">P&F Transaction Cost</label>
+                <input type="number" step="0.1" bind:value={params.transactionCost}>
             </div>
             <div class="control-row">
                 <label for="optimizer-direction">Optimizer Direction</label>

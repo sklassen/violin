@@ -116,12 +116,12 @@ pub fn calculate_return_pnf(
     let mut input_columns: Vec<PnfColumn> = serde_wasm_bindgen::from_value(pnf_data)
         .map_err(|e| JsValue::from_str(&format!("Deserialization error: {}", e)))?;
 
-    let cost = transaction_cost.unwrap_or(2.0);
+    let cost = transaction_cost.unwrap_or(3.0);
     let mut cumulative_return = 0.0;
 
     for col in &mut input_columns {
         let num_boxes = ((col.to - col.from).abs() / box_size).floor();
-        let mut bar_return = num_boxes - reversal_amount - cost;
+        let mut bar_return = num_boxes - reversal_amount * 2.0 - cost;
 
         bar_return = match mode {
             1 => {
@@ -155,6 +155,7 @@ fn calculate_total_return(
     time_series: &Vec<f64>,
     box_size: f64,
     reversal_amount: usize,
+    transaction_cost: f64,
     mode: i64,
 ) -> f64 {
     if time_series.len() < 2 || box_size <= 0.0 {
@@ -228,7 +229,7 @@ fn calculate_total_return(
     let mut total_return = 0.0;
     for col in &columns {
         let num_boxes = ((col.to - col.from).abs() / box_size).floor();
-        let mut bar_return = num_boxes - reversal_amount as f64 - 2.0;
+        let mut bar_return = num_boxes - reversal_amount as f64 * 2.0 - transaction_cost;
 
         bar_return = match mode {
             1 => if col.direction == PnfDirection::Up { bar_return } else { 0.0 },
@@ -245,6 +246,7 @@ fn calculate_total_return(
 pub fn optimize_box_size(
     time_series: Vec<f64>,
     reversal_amount: usize,
+    transaction_cost: f64,
     direction: i64,
 ) -> Result<f64, JsValue> {
     let min_box_size = 0.1;
@@ -256,7 +258,7 @@ pub fn optimize_box_size(
 
     for i in 0..=steps {
         let box_size = min_box_size + (max_box_size - min_box_size) * (i as f64 / steps as f64);
-        let total_return = calculate_total_return(&time_series, box_size, reversal_amount, direction);
+        let total_return = calculate_total_return(&time_series, box_size, reversal_amount, transaction_cost, direction);
 
         if total_return > max_return {
             max_return = total_return;
