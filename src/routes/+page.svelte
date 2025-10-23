@@ -8,6 +8,7 @@
 	/** @type {Error | null} */
 	let error = $state(null);
 	let initialized = $state(false);
+	let n_samples = $state(300);
 
 	const distributionTypes = ['uniform', 'normal', 'skewed', 'bimodal', 'fractal'];
 
@@ -25,7 +26,8 @@
 	 *   type: string;
 	 *   params: any;
 	 *   rawData: number[];
-	 *   pnfData: { from: number; to: number; direction: 'Up' | 'Down' }[];
+	 *   pnfData: { from: number; to: number; direction: 'Up' | 'Down', start_time: number, end_time: number }[];
+	 *   nSamples: number;
 	 * }[]}
 	 */ ([
 		{ id: 1, type: 'normal', params: { ...defaultParams.normal }, rawData: /** @type {number[]} */ ([]), pnfData: /** @type {{ from: number; to: number; direction: 'Up' | 'Down' }[]} */ ([]) },
@@ -101,6 +103,10 @@
 {:else if !initialized}
 	<p>Initializing WASM module...</p>
 {:else}
+	<div class="global-controls">
+		<label for="n_samples">Number of Samples:</label>
+		<input type="number" id="n_samples" bind:value={n_samples} />
+	</div>
 	<main>
 		{#each plots as plot, i (plot.id)}
 			<div class="plot-selector">
@@ -117,6 +123,7 @@
 					initialParams={plot.params}
 					bind:rawData={plot.rawData}
 					bind:pnfData={plot.pnfData}
+					nSamples={n_samples}
 				/>
 			</div>
 		{/each}

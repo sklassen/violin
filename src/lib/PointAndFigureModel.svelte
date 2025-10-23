@@ -28,7 +28,7 @@
 
 	function resetPnfModel() {
 		if (pnfModel) {
-			tf.dispose(pnfModel);
+			tf.dispose(/** @type {any} */ (pnfModel));
 		}
 		pnfModel = null;
 		pnfTrainingStatus = 'Not started';

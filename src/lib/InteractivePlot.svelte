@@ -11,7 +11,8 @@
 		generate_normal_data,
 		generate_skewed_data,
 		generate_bimodal_data,
-		generate_fractal_data
+		generate_fractal_data,
+		optimize_box_size
 	} from '$lib/vio-pkg/vio.js';
 
 	/**
@@ -20,12 +21,13 @@
 	 *   type: string;
 	 *   initialParams: any;
 	 *   rawData: number[] | Float64Array;
-	 *   pnfData: { from: number; to: number; direction: 'Up' | 'Down' }[];
+	 *   pnfData: { from: number; to: number; direction: 'Up' | 'Down', start_time: number, end_time: number }[];
+	 *   nSamples: number;
 	 * }}
 	 */
-	let { type, initialParams, rawData = $bindable(), pnfData = $bindable() } = $props();
+	let { type, initialParams, rawData = $bindable(), pnfData = $bindable(), nSamples } = $props();
 
-	let params = $state({ ...initialParams, boxSize: 1.0 });
+	let params = $state({ ...initialParams, boxSize: 1.0, reversal: 3 });
 	let seed = $state(Math.floor(Math.random() * 1000000));
 	let generationTrigger = $state(0);
 
@@ -33,13 +35,14 @@
 	let plotData = $state(null);
 	/** @type {[number, number][]} */
 	let plotTSData = $state([]);
-	/** @type {{ from: number; to: number; direction: 'Up' | 'Down' }[]} */
+	/** @type {{ from: number; to: number; direction: 'Up' | 'Down', start_time: number, end_time: number }[]} */
 	let returnPnfData = $state([]);
+	/** @type {{ from: number; to: number; direction: 'Up' | 'Down', start_time: number, end_time: number }[]} */
 	let returnPnfUpData = $state([]);
+	/** @type {{ from: number; to: number; direction: 'Up' | 'Down', start_time: number, end_time: number }[]} */
 	let returnPnfDnData = $state([]);
   let title = type.charAt(0).toUpperCase() + type.slice(1) + " Distribution";
 
-	const n_samples = 300;
     const plotHeight = 300; // Standard height for all plots
 
 	// This effect will re-run whenever the trigger changes, generating new rawData
@@ -49,19 +52,19 @@
 		try {
 			switch (type) {
 				case 'uniform':
-					rawData = generate_uniform_data(params.min, params.max, params.ar_coeff, n_samples, seed);
+					rawData = generate_uniform_data(params.min, params.max, params.ar_coeff, nSamples, seed);
 					break;
 				case 'normal':
-					rawData = generate_normal_data(params.mean, params.std_dev, params.ar_coeff, n_samples, seed);
+					rawData = generate_normal_data(params.mean, params.std_dev, params.ar_coeff, nSamples, seed);
 					break;
 				case 'skewed':
-					rawData = generate_skewed_data(params.mean, params.std_dev, params.skew, params.ar_coeff, n_samples, seed);
+					rawData = generate_skewed_data(params.mean, params.std_dev, params.skew, params.ar_coeff, nSamples, seed);
 					break;
 				case 'bimodal':
-					rawData = generate_bimodal_data(params.mean1, params.std_dev1, params.mean2, params.std_dev2, params.weight, params.ar_coeff, n_samples, seed);
+					rawData = generate_bimodal_data(params.mean1, params.std_dev1, params.mean2, params.std_dev2, params.weight, params.ar_coeff, nSamples, seed);
 					break;
 				case 'fractal':
-					const fbmPath = generate_fractal_data(params.hurst, n_samples, seed);
+					const fbmPath = generate_fractal_data(params.hurst, nSamples, seed);
 					const increments = [];
 					for (let i = 0; i < fbmPath.length - 1; i++) {
 						increments.push(fbmPath[i + 1] - fbmPath[i]);
@@ -92,7 +95,7 @@
 			plotTSData = cumulative_sum_pairs;
 
 			// Calculate P&F data
-			pnfData = calculate_pnf_data(new Float64Array(cumulative_sum_values), params.boxSize, 3);
+			pnfData = calculate_pnf_data(new Float64Array(cumulative_sum_values), params.boxSize, params.reversal);
 
 		} else {
 			plotData = null;
@@ -125,6 +128,18 @@
 	function resetParams() {
 		params = { ...initialParams, boxSize: 1.0 };
 		generateData();
+	}
+
+	let optimizationDirection = $state(0);
+	function runOptimizer() {
+		const cumulative_sum_values = [];
+		let current_sum = 0.0;
+		for (let i = 0; i < rawData.length; i++) {
+			current_sum += rawData[i];
+			cumulative_sum_values.push(current_sum);
+		}
+		const bestBoxSize = optimize_box_size(new Float64Array(cumulative_sum_values), params.reversal, BigInt(optimizationDirection));
+		params.boxSize = bestBoxSize;
 	}
 
 	onMount(() => {
@@ -260,6 +275,19 @@
             <div class="control-row">
                 <label for="boxSize">P&F Box Size</label>
                 <input type="number" step="0.1" bind:value={params.boxSize}>
+            </div>
+            <div class="control-row">
+                <label for="reversal">P&F Reversal</label>
+                <input type="number" step="1" bind:value={params.reversal}>
+            </div>
+            <div class="control-row">
+                <label for="optimizer-direction">Optimizer Direction</label>
+                <select id="optimizer-direction" bind:value={optimizationDirection}>
+                    <option value={0}>Both</option>
+                    <option value={1}>Up</option>
+                    <option value={-1}>Down</option>
+                </select>
+                <button onclick={runOptimizer}>Optimize Box Size</button>
             </div>
         </div>
         <div class="controls">
