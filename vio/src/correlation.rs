@@ -1,5 +1,4 @@
 use wasm_bindgen::prelude::*;
-use statrs::statistics::Statistics;
 
 fn rank(data: &mut [f64]) {
     let mut ranks: Vec<(usize, &f64)> = data.iter().enumerate().collect();
@@ -18,16 +17,45 @@ pub fn pearson_correlation(data1: &[f64], data2: &[f64]) -> Result<f64, JsValue>
     if data1.len() != data2.len() {
         return Err(JsValue::from_str("Input data must have the same length."));
     }
-    let n = data1.len() as f64;
-    let mean1 = data1.mean();
-    let mean2 = data2.mean();
-    let std_dev1 = data1.std_dev();
-    let std_dev2 = data2.std_dev();
-    let mut covariance = 0.0;
-    for i in 0..data1.len() {
-        covariance += (data1[i] - mean1) * (data2[i] - mean2);
+    let n = data1.len();
+    if n < 2 {
+        return Ok(0.0);
     }
-    Ok(covariance / ((n - 1.0) * std_dev1 * std_dev2))
+
+    let mut mean1 = 0.0;
+    let mut mean2 = 0.0;
+    let mut m2_1 = 0.0;
+    let mut m2_2 = 0.0;
+    let mut c = 0.0;
+
+    for i in 0..n {
+        let x = data1[i];
+        let y = data2[i];
+        let k = (i + 1) as f64;
+
+        let dx = x - mean1;
+        let dy = y - mean2;
+
+        mean1 += dx / k;
+        mean2 += dy / k;
+
+        c += dx * (y - mean2);
+        m2_1 += dx * (x - mean1);
+        m2_2 += dy * (y - mean2);
+    }
+
+    let sample_var1 = m2_1 / ((n - 1) as f64);
+    let sample_var2 = m2_2 / ((n - 1) as f64);
+    let sample_cov = c / ((n - 1) as f64);
+
+    let std_dev1 = sample_var1.sqrt();
+    let std_dev2 = sample_var2.sqrt();
+
+    if std_dev1 == 0.0 || std_dev2 == 0.0 {
+        return Ok(0.0);
+    }
+
+    Ok(sample_cov / (std_dev1 * std_dev2))
 }
 
 #[wasm_bindgen]
