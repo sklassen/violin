@@ -4,6 +4,7 @@
 	import InteractivePlot from '$lib/InteractivePlot.svelte';
 	import TimeSeriesModel from '$lib/TimeSeriesModel.svelte';
 	import PointAndFigureModel from '$lib/PointAndFigureModel.svelte';
+	import CorrelationMatrix from '$lib/CorrelationMatrix.svelte';
 
 	/** @type {Error | null} */
 	let error = $state(null);
@@ -130,4 +131,5 @@
 	</main>
 	<TimeSeriesModel {plots} />
 	<PointAndFigureModel {plots} />
+	<CorrelationMatrix {plots} />
 {/if}
