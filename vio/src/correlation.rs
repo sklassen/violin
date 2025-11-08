@@ -88,3 +88,24 @@ pub fn kendall_correlation(data1: &[f64], data2: &[f64]) -> Result<f64, JsValue>
     }
     Ok((concordant_pairs - discordant_pairs) as f64 / (concordant_pairs + discordant_pairs) as f64)
 }
+
+#[wasm_bindgen]
+pub fn variance(data: &[f64]) -> Result<f64, JsValue> {
+    let n = data.len();
+    if n < 2 {
+        return Ok(0.0);
+    }
+
+    let mut mean = 0.0;
+    let mut m2 = 0.0;
+
+    for i in 0..n {
+        let x = data[i];
+        let k = (i + 1) as f64;
+        let dx = x - mean;
+        mean += dx / k;
+        m2 += dx * (x - mean);
+    }
+
+    Ok(m2 / ((n - 1) as f64))
+}
