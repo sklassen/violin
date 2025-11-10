@@ -4,7 +4,15 @@
 	import ViolinPlot from '$lib/ViolinPlot.svelte';
 	import TimeSeriesPlot from '$lib/TimeSeriesPlot.svelte';
 	import ConfusionMatrix from '$lib/ConfusionMatrix.svelte';
-	import { calculate_violin_data, calculate_pnf_data } from '$lib/vio-pkg/vio.js';
+	import {
+		calculate_violin_data,
+		calculate_pnf_data,
+		generate_uniform_data,
+		generate_normal_data,
+		generate_skewed_data,
+		generate_bimodal_data,
+		generate_fractal_data
+	} from '$lib/vio-pkg/vio.js';
 
 	/**
 	 * @typedef {{
@@ -36,7 +44,7 @@
 
 	function resetModel() {
 		if (model) {
-			tf.dispose(model);
+			tf.dispose(/** @type {any} */ (model));
 		}
 		model = null;
 		trainingStatus = 'Not started';
@@ -58,7 +66,7 @@
 
 	/** @type {any} */
 	let guessViolinData = $state(null);
-	/** @type {{ from: number; to: number; direction: 'Up' | 'Down' }[]} */
+	/** @type {{ from: number; to: number; direction: 'Up' | 'Down', start_time: number, end_time: number }[]} */
 	let guessPnfData = $state([]);
 	/** @type {[number, number][]} */
 	let guessTimeSeriesData = $state([]);
@@ -90,6 +98,50 @@
 
 		const formattedData = plot.rawData.map(roundingFunction);
 		guessingData = formattedData.join(', ');
+	}
+
+	function generateDataForGuessing() {
+		const plot = plots[selectedPlotForCopy];
+		if (!plot) {
+			guessingData = 'No plot selected.';
+			return;
+		}
+
+		let newData;
+		const nSamples = plot.rawData.length || 300; // Use same length as copied plot or default
+		const seed = Math.floor(Math.random() * 1000000); // Use a new random seed
+		const params = plot.params;
+
+		try {
+			switch (plot.type) {
+				case 'uniform':
+					newData = generate_uniform_data(params.min, params.max, params.ar_coeff, nSamples, seed);
+					break;
+				case 'normal':
+					newData = generate_normal_data(params.mean, params.std_dev, params.ar_coeff, nSamples, seed);
+					break;
+				case 'skewed':
+					newData = generate_skewed_data(params.mean, params.std_dev, params.skew, params.ar_coeff, nSamples, seed);
+					break;
+				case 'bimodal':
+					newData = generate_bimodal_data(params.mean1, params.std_dev1, params.mean2, params.std_dev2, params.weight, params.ar_coeff, nSamples, seed);
+					break;
+				case 'fractal':
+					const fbmPath = generate_fractal_data(params.hurst, nSamples, seed);
+					const increments = [];
+					for (let i = 0; i < fbmPath.length - 1; i++) {
+						increments.push(fbmPath[i + 1] - fbmPath[i]);
+					}
+					newData = increments;
+					break;
+				default:
+					newData = [];
+			}
+			guessingData = newData.join(', ');
+		} catch (e) {
+			console.error(`Error generating data for guessing:`, e);
+			guessingData = "Error generating data.";
+		}
 	}
 
 	const TIME_STEP = 20;
@@ -205,7 +257,7 @@
 					const pred_classes = pred_clf.argMax(-1);
 					const true_classes = tf.tensor1d(allY_clf, 'int32');
 					confusionMatrix = /** @type {any} */ (
-						tf.math.confusionMatrix(true_classes, pred_classes, plots.length).arraySync()
+						tf.math.confusionMatrix(true_classes, /** @type {any} */ (pred_classes), plots.length).arraySync()
 					);
 				}
 			} catch (/** @type {any} */ e) {
@@ -404,6 +456,7 @@
 				<option value="ceil">Ceil</option>
 			</select>
 			<button onclick={copyDataForGuessing}>Copy Data</button>
+			<button onclick={generateDataForGuessing}>Generate New Data</button>
 		</div>
 		<textarea
 			bind:value={guessingData}

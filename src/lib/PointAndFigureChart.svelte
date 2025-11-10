@@ -1,7 +1,7 @@
 <script>
     import * as d3 from 'd3';
 
-	/** @type {{ data: { from: number; to: number; direction: 'Up' | 'Down' }[]; boxSize: number; width?: number; height?: number; predictedNextBar?: { from: number; to: number; direction: 'Up' | 'Down' } | null; title?: string }} */
+	/** @type {{ data: { from: number; to: number; direction: 'Up' | 'Down', start_time: number, end_time: number }[]; boxSize: number; width?: number; height?: number; predictedNextBar?: { from: number; to: number; direction: 'Up' | 'Down' } | null; title?: string }} */
     let { data, boxSize = 1.0, width = 320, height = 200, predictedNextBar = null, title = "Point & Figure Chart" } = $props();
 
 	/** @type {HTMLElement} */
@@ -35,6 +35,17 @@
                 .range([0, innerWidth])
                 .padding(0.1);
 
+            const tooltip = d3.select(container)
+                .append("div")
+                .style("opacity", 0)
+                .attr("class", "tooltip")
+                .style("background-color", "white")
+                .style("border", "solid")
+                .style("border-width", "1px")
+                .style("border-radius", "5px")
+                .style("padding", "10px")
+                .style("position", "absolute");
+
             // Add Y-axis grid lines for better readability
             svg.append("g")
                 .attr("class", "grid")
@@ -60,6 +71,21 @@
                 const end = Math.max(col.from, col.to);
                 const numBoxes = Math.floor(Math.abs(end - start) / boxSize);
 
+                const columnGroup = svg.append("g")
+                    .on("mouseover", function(/** @type {any} */ event) {
+                        tooltip.transition()
+                            .duration(200)
+                            .style("opacity", .9);
+                        tooltip.html(`Start: ${col.start_time}<br/>End: ${col.end_time}`)
+                            .style("left", (event.pageX) + "px")
+                            .style("top", (event.pageY - 28) + "px");
+                    })
+                    .on("mouseout", function() {
+                        tooltip.transition()
+                            .duration(500)
+                            .style("opacity", 0);
+                    });
+
                 for (let j = 0; j <= numBoxes; j++) {
                     const yLevel = col.direction === 'Up'
                         ? start + j * boxSize
@@ -70,14 +96,14 @@
 
                     if (col.direction === 'Up') {
                         // Draw 'X' with two lines
-                        svg.append("line")
+                        columnGroup.append("line")
                            .attr("x1", cx - symbolRadius)
                            .attr("y1", cy - symbolRadius)
                            .attr("x2", cx + symbolRadius)
                            .attr("y2", cy + symbolRadius)
                            .attr("stroke", "green")
                            .attr("stroke-width", 1.5);
-                        svg.append("line")
+                        columnGroup.append("line")
                            .attr("x1", cx - symbolRadius)
                            .attr("y1", cy + symbolRadius)
                            .attr("x2", cx + symbolRadius)
@@ -86,7 +112,7 @@
                            .attr("stroke-width", 1.5);
                     } else {
                         // Draw 'O' with a circle
-                        svg.append("circle")
+                        columnGroup.append("circle")
                            .attr("cx", cx)
                            .attr("cy", cy)
                            .attr("r", symbolRadius)
