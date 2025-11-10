@@ -91,12 +91,12 @@ pub fn generate_bimodal_data(
 }
 
 #[wasm_bindgen]
-pub fn generate_fractal_data(hurst: f64, n_samples: usize, seed: u32) -> Vec<f64> {
+pub fn generate_fractal_data(hurst: f64, n_samples: usize, seed: u32, mean: f64, std_dev: f64) -> Vec<f64> {
     if n_samples == 0 {
         return Vec::new();
     }
     if n_samples == 1 {
-        return vec![0.0];
+        return vec![mean];
     }
 
     let n = n_samples - 1;
@@ -148,5 +148,14 @@ pub fn generate_fractal_data(hurst: f64, n_samples: usize, seed: u32) -> Vec<f64
     for i in 0..n {
         fbm[i+1] = fbm[i] + fgn[i];
     }
-    fbm
+
+    // Step 8: Standardize the fBm series
+    let fbm_mean = fbm.iter().sum::<f64>() / n_samples as f64;
+    let fbm_std_dev = (fbm.iter().map(|&x| (x - fbm_mean).powi(2)).sum::<f64>() / (n_samples - 1) as f64).sqrt();
+
+    if fbm_std_dev == 0.0 {
+        return vec![mean; n_samples];
+    }
+
+    fbm.into_iter().map(|x| mean + (x - fbm_mean) * std_dev / fbm_std_dev).collect()
 }

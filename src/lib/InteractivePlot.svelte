@@ -64,12 +64,7 @@
 					rawData = generate_bimodal_data(params.mean1, params.std_dev1, params.mean2, params.std_dev2, params.weight, params.ar_coeff, nSamples, seed);
 					break;
 				case 'fractal':
-					const fbmPath = generate_fractal_data(params.hurst, nSamples, seed);
-					const increments = [];
-					for (let i = 0; i < fbmPath.length - 1; i++) {
-						increments.push(fbmPath[i + 1] - fbmPath[i]);
-					}
-					rawData = increments;
+					rawData = generate_fractal_data(params.hurst, nSamples, seed, params.mean, params.std_dev);
 					break;
 			}
 		} catch (e) {
@@ -264,6 +259,14 @@
 					<label for="hurst">Hurst</label>
 					<input type="number" step="0.1" bind:value={params.hurst}>
 				</div>
+				<div class="control-row">
+                    <label for="mean">Mean</label>
+                    <input type="number" step="0.1" bind:value={params.mean}>
+                </div>
+                <div class="control-row">
+                    <label for="std_dev">Std Dev</label>
+                    <input type="number" step="0.1" bind:value={params.std_dev}>
+                </div>
             {/if}
             <hr>
 			{#if type !== 'fractal'}

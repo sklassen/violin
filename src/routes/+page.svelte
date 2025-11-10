@@ -18,7 +18,7 @@
 		normal: { mean: 0, std_dev: 1, ar_coeff: 0.0 },
 		skewed: { mean: 0, std_dev: 1, skew: 0.05, ar_coeff: 0.0 },
 		bimodal: { mean1: -3, std_dev1: 1, mean2: 3, std_dev2: 1, weight: 0.5, ar_coeff: 0.0 },
-		fractal: { hurst: 0.7 }
+		fractal: { hurst: 0.7, mean: 0.0, std_dev: 1.0 }
 	};
 
 	let plots = $state(/**
