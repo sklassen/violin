@@ -166,6 +166,9 @@
         min-height: 320px; /* Ensures all control panels have same height */
         justify-content: flex-start;
     }
+    .pnf-panel {
+        min-height: 15px; 
+    }
     .plot-panel {
         min-height: 220px; /* Ensures all plot panels have same height */
     }
@@ -275,6 +278,35 @@
 					<input type="number" step="0.1" bind:value={params.ar_coeff}>
 				</div>
 			{/if}
+            </div>
+        </div>
+        <div class="controls">
+			<div class="control-row">
+				<label for="seed">Seed</label>
+				<input type="number" bind:value={seed} />
+			</div>
+			<div class="control-row">
+				<button onclick={randomizeSeed}>Random</button>
+				<button onclick={resetParams}>Reset</button>
+				<button onclick={generateData}>Generate</button>
+			</div>
+		</div>
+
+    <div class="panel plot-panel">
+        {#if plotData}
+            <ViolinPlot data={plotData} title={title} width={320} height={plotHeight} />
+        {:else}
+            <p>Generating plot...</p>
+        {/if}
+    </div>
+    <div class="panel plot-panel">
+        {#if plotTSData.length > 0}
+            <TimeSeriesPlot data={plotTSData} width={320} height={plotHeight} />
+        {/if}
+    </div>
+
+    <div class="panel pnf-panel">
+        <div class="controls">
             <div class="control-row">
                 <label for="boxSize">P&F Box Size</label>
                 <input type="number" step="0.1" bind:value={params.boxSize}>
@@ -295,33 +327,11 @@
                     <option value={-1}>Down</option>
                 </select>
                 <button onclick={runOptimizer}>Optimize Box Size</button>
-            </div>
-        </div>
-        <div class="controls">
-			<div class="control-row">
-				<label for="seed">Seed</label>
-				<input type="number" bind:value={seed} />
-			</div>
-			<div class="control-row">
-				<button onclick={randomizeSeed}>Random</button>
-				<button onclick={resetParams}>Reset</button>
-				<button onclick={generateData}>Generate</button>
-			</div>
-		</div>
+         </div>
+      </div>
     </div>
 
-    <div class="panel plot-panel">
-        {#if plotData}
-            <ViolinPlot data={plotData} title={title} width={320} height={plotHeight} />
-        {:else}
-            <p>Generating plot...</p>
-        {/if}
-    </div>
-    <div class="panel plot-panel">
-        {#if plotTSData.length > 0}
-            <TimeSeriesPlot data={plotTSData} width={320} height={plotHeight} />
-        {/if}
-    </div>
+    <div>
     <div class="panel plot-panel">
         {#if pnfData.length > 0}
             <PointAndFigureChart data={pnfData} boxSize={params.boxSize} width={320} height={300} />
@@ -349,5 +359,6 @@
     <div class="panel data-panel">
         <label for="pnfData">Point & Figure Data:</label>
         <textarea id="pnfData" readonly>{JSON.stringify(pnfData)}</textarea>
+    </div>
     </div>
 </div>

@@ -77,21 +77,21 @@
                 </tr>
                 <tr>
                     <td>Pearson</td>
-                    <td>{correlations.pearson['1v2'].toFixed(4)}</td>
-                    <td>{correlations.pearson['1v3'].toFixed(4)}</td>
-                    <td>{correlations.pearson['2v3'].toFixed(4)}</td>
+                    <td>{(100*correlations.pearson['1v2']).toFixed(1)}%</td>
+                    <td>{(100*correlations.pearson['1v3']).toFixed(1)}%</td>
+                    <td>{(100*correlations.pearson['2v3']).toFixed(1)}%</td>
                 </tr>
                 <tr>
                     <td>Spearman</td>
-                    <td>{correlations.spearman['1v2'].toFixed(4)}</td>
-                    <td>{correlations.spearman['1v3'].toFixed(4)}</td>
-                    <td>{correlations.spearman['2v3'].toFixed(4)}</td>
+                    <td>{(100*correlations.spearman['1v2']).toFixed(1)}%</td>
+                    <td>{(100*correlations.spearman['1v3']).toFixed(1)}%</td>
+                    <td>{(100*correlations.spearman['2v3']).toFixed(1)}%</td>
                 </tr>
                 <tr>
                     <td>Kendall</td>
-                    <td>{correlations.kendall['1v2'].toFixed(4)}</td>
-                    <td>{correlations.kendall['1v3'].toFixed(4)}</td>
-                    <td>{correlations.kendall['2v3'].toFixed(4)}</td>
+                    <td>{(100*correlations.kendall['1v2']).toFixed(1)}%</td>
+                    <td>{(100*correlations.kendall['1v3']).toFixed(1)}%</td>
+                    <td>{(100*correlations.kendall['2v3']).toFixed(1)}%</td>
                 </tr>
             </tbody>
         </table>
