@@ -29,9 +29,9 @@
                     '2v3': pearson_correlation(new Float64Array(p2.rawData), new Float64Array(p3.rawData)),
                 },
                 spearman: {
-                    '1v2': spearman_correlation(new Float64Array(p1.rawData), new Float64Array(p2.rawData)),
-                    '1v3': spearman_correlation(new Float64Array(p1.rawData), new Float64Array(p3.rawData)),
-                    '2v3': spearman_correlation(new Float64Array(p2.rawData), new Float64Array(p3.rawData)),
+                    '1v2': spearman_correlation(new Float64Array(p1.rawData).slice(), new Float64Array(p2.rawData).slice()),
+                    '1v3': spearman_correlation(new Float64Array(p1.rawData).slice(), new Float64Array(p3.rawData).slice()),
+                    '2v3': spearman_correlation(new Float64Array(p2.rawData).slice(), new Float64Array(p3.rawData).slice()),
                 },
                 kendall: {
                     '1v2': kendall_correlation(new Float64Array(p1.rawData), new Float64Array(p2.rawData)),

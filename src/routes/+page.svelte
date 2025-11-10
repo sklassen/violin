@@ -129,7 +129,7 @@
 			</div>
 		{/each}
 	</main>
+	<CorrelationMatrix {plots} />
 	<TimeSeriesModel {plots} />
 	<PointAndFigureModel {plots} />
-	<CorrelationMatrix {plots} />
 {/if}
